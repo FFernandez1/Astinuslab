@@ -1,0 +1,205 @@
+version: 1
+
+workloads:
+  - id: wordpress-6.4
+    enabled: true
+    display_name: "WordPress 6.4"
+    tags: [cms, php, web]
+    max_session_hours: 4
+    install_script: guest/workloads/wordpress-6.4/install.sh
+    health_check:
+      url_path: /wp-login.php
+      port: 80
+      expected_status: 200
+      timeout_seconds: 120
+    services:
+      - name: WordPress
+        port: 80
+        url_path: /wp-login.php
+        credentials:
+          user: admin
+          password: admin
+      - name: MySQL
+        port: 3306
+        credentials:
+          user: root
+          password: labroot
+    cve_ids:
+      - CVE-2023-2745   # Directory traversal via wp_lang parameter (< 6.2.1)
+      - CVE-2022-21661  # SQL injection via WP_Query (< 5.8.3)
+      - CVE-2023-39999 # Directory traversal exercises for WordPress 6.4 lab
+    cve_context: "WordPress 6.4 — intentionally vulnerable lab environment"
+    network_isolation: true
+    # Compatibility selectors are matched against target catalog metadata during
+    # job creation and workload listing.
+    # Supported selector keys:
+    #   target_id / target_ids: exact target catalog IDs
+    #   family / families: debian, redhat
+    #   distro / distros: ubuntu, debian, fedora, rocky, almalinux, ...
+    #   version / versions: exact version strings
+    #   version_min: inclusive minimum version
+    #   version_max: inclusive maximum version
+    #   arch / arches: x86_64, aarch64, ...
+    #   min_disk_gb: minimum target disk size
+    # Example:
+    #   compatibility:
+    #     include:
+    #       - distro: ubuntu
+    #         version_min: "20.04"
+    #         version_max: "22.04"
+    #         min_disk_gb: 20
+    #     exclude:
+    #       - distro: ubuntu
+    #         version: "24.04"
+    compatibility:
+      include:
+        - family: debian
+
+  - id: dvwa
+    enabled: true
+    display_name: "DVWA (Damn Vulnerable Web App)"
+    tags: [php, web, training]
+    max_session_hours: 4
+    install_script: guest/workloads/dvwa/install.sh
+    health_check:
+      url_path: /dvwa/login.php
+      port: 80
+      expected_status: 200
+      timeout_seconds: 90
+    services:
+      - name: DVWA
+        port: 80
+        url_path: /dvwa/login.php
+        credentials:
+          user: admin
+          password: password
+      - name: MySQL
+        port: 3306
+        credentials:
+          user: root
+          password: labroot
+    cve_ids:
+      - CVE-2012-1823   # PHP CGI argument injection (exercises RCE category)
+      - CVE-2021-3129   # Laravel debug RCE (exercises PHP deserialization)
+      - CVE-2017-9841   # PHPUnit eval-stdin RCE (exercises file inclusion)
+    cve_context: "DVWA — intentionally vulnerable training environment covering SQLi, XSS, CSRF, file upload, command injection"
+    network_isolation: true
+    compatibility:
+      include:
+        - family: debian
+
+  - id: juice-shop
+    enabled: true
+    display_name: "OWASP Juice Shop"
+    tags: [nodejs, web, owasp, training, ejpt]
+    max_session_hours: 4
+    install_script: guest/workloads/juice-shop/install.sh
+    health_check:
+      url_path: /
+      port: 3000
+      expected_status: 200
+      timeout_seconds: 90
+    services:
+      - name: Juice Shop
+        port: 3000
+        url_path: /
+        credentials:
+          user: admin@juice-sh.op
+          password: admin123
+    cve_ids:
+      - CVE-2021-22960
+      - CVE-2022-24785
+    cve_context: "OWASP Juice Shop — covers all OWASP Top 10 vulnerabilities including SQLi, XSS, broken auth, IDOR, SSRF, and XXE. Widely used for OWASP certifications and eJPT prep."
+    network_isolation: true
+    compatibility:
+      include:
+        - family: debian
+
+  - id: vulnhub-basic-pentesting
+    enabled: true
+    display_name: "Basic Pentesting (Samba + WordPress)"
+    max_session_hours: 4
+    install_script: guest/workloads/basic-pentesting/install.sh
+    health_check:
+      url_path: /
+      port: 80
+      expected_status: 200
+      timeout_seconds: 120
+    services:
+      - name: HTTP (Apache + WordPress)
+        port: 80
+        url_path: /
+      - name: SSH
+        port: 22
+        credentials:
+          user: labuser
+          password: labuser
+      - name: Samba
+        port: 445
+        credentials:
+          user: labuser
+          password: labuser
+    cve_ids:
+      - CVE-2017-7494
+      - CVE-2007-2447
+    cve_context: "Basic Pentesting — combines WordPress enumeration, SMB/Samba exploitation (EternalBlue-adjacent misconfigs), and privilege escalation via SUID binaries. Mirrors OSCP and TryHackMe beginner path machines."
+    network_isolation: true
+    compatibility:
+      include:
+        - family: debian
+
+  - id: gitlab-ce-11
+    enabled: true
+    display_name: "GitLab CE 11.4.7 (RCE)"
+    tags: [git, ruby, web, oscp, htb]
+    max_session_hours: 4
+    install_script: guest/workloads/gitlab-ce-11/install.sh
+    health_check:
+      url_path: /users/sign_in
+      port: 80
+      expected_status: 200
+      timeout_seconds: 180
+    services:
+      - name: GitLab CE
+        port: 80
+        url_path: /users/sign_in
+        credentials:
+          user: root
+          password: labpassword
+      - name: PostgreSQL
+        port: 5432
+        credentials:
+          user: gitlab
+          password: labpassword
+    cve_ids:
+      - CVE-2018-19571
+      - CVE-2018-19585
+    cve_context: "GitLab CE 11.4.7 — SSRF + CSRF chain leading to unauthenticated RCE via Redis job queue. Featured in multiple OSCP-like HTB machines (e.g. GitLab). Excellent for understanding SSRF-to-RCE pivots."
+    network_isolation: true
+    compatibility:
+      include:
+        - family: debian
+
+  # ── Stacks ──────────────────────────────────────────────────────────────────
+  - id: full-php-stack
+    type: stack
+    enabled: true
+    display_name: "Full PHP Stack (WordPress + DVWA)"
+    tags: [php, web, multi, pentest]
+    max_session_hours: 6
+    components:
+      - wordpress-6.4
+      - dvwa
+    # Services, CVE IDs and network_isolation are aggregated from components automatically.
+    # Override cve_context to describe the combined scenario:
+    cve_context: "Combined stack: WordPress 6.4 (SQLi, XSS, RCE) alongside DVWA training environment on the same VM."
+    compatibility:
+      include:
+        - family: debian
+    # Optional: boot an attacker VM on the same libvirt network for active exploitation practice.
+    # The image must exist in the images/ directory. Uncomment to enable.
+    # attacker_vm:
+    #   image_ref: kali-2024.4-amd64.qcow2
+    #   username: kali
+    #   os_variant: generic
+    #   setup_script: guest/workloads/kali/setup.sh  # optional post-boot script

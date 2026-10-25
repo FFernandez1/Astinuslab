@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}{{ t.not_found_title or "Not found" }} · AstinusLab{% endblock %}
+
+{% block content %}
+<div class="wiz-shell">
+  <div class="wiz-body">
+    <section class="wiz-main">
+      <div class="page-head">
+        <div>
+          <h1 class="page-head__title">{{ t.not_found_title or "Not found" }}</h1>
+          <p class="page-head__sub">{{ detail }}</p>
+        </div>
+      </div>
+      <p class="empty-state">
+        {{ t.not_found_hint or "It may have been deleted, or the link may be wrong." }}
+      </p>
+      <a href="/jobs" class="wiz-btn wiz-btn--primary">{{ t.nav_jobs }}</a>
+    </section>
+  </div>
+</div>
+{% endblock %}

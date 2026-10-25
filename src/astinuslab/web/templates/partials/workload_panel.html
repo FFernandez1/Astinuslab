@@ -1,0 +1,126 @@
+{% if mode == 'manual_trigger' %}
+<div id="workload-panel-content">
+
+  {# ── Attacker VM — compact summary row with inline change select ── #}
+  <div class="form-group attacker-row" data-attacker-picker>
+    <div class="attacker-row__summary">
+      <span class="attacker-row__label">{{ t.attacker_vm_label or "Attacker VM" }}</span>
+      <span class="attacker-row__slash">/</span>
+      <span class="attacker-row__value" data-attacker-summary>{{ t.attacker_none or "none" }}</span>
+      <span class="attacker-row__action" data-attacker-action>
+        <button type="button" class="attacker-row__change" data-attacker-change>
+          <span data-attacker-action-label>select</span><span aria-hidden="true">▾</span>
+        </button>
+        <select name="attacker_vm_id" id="attacker_vm_id" class="attacker-row__inline-select" data-attacker-select hidden>
+          <option value="">{{ t.attacker_none or "none" }}</option>
+          {% for a in attackers %}
+            <option value="{{ a.id }}"
+                    data-label="{{ a.display_name }}"
+                    {% if not a.image_available %}disabled title="Image not found: {{ a.image_ref }}"{% endif %}>
+              {{ a.display_name }}{% if not a.image_available %} ({{ t.image_missing or "image missing" }}){% endif %}
+            </option>
+          {% endfor %}
+        </select>
+      </span>
+      <span class="attacker-row__clear-slot">
+        <button type="button" class="attacker-row__clear" data-attacker-clear aria-label="Clear attacker" hidden>x</button>
+      </span>
+    </div>
+    {% if not attackers %}
+      <div class="text-muted small form-hint attacker-row__hint">
+        {{ t.attacker_no_images or "No attacker images found. Add entries to" }}
+        <code>config/catalog/attackers.yaml</code> {{ t.attacker_no_images_hint or "and place images in" }} <code>images/</code>.
+      </div>
+    {% endif %}
+  </div>
+
+  {# ── Workload cards ── #}
+  <fieldset class="form-group workload-picker">
+    <legend class="form-group-legend">{{ t.label_workload_optional or "Workload (optional)" }}</legend>
+
+    <div class="wl-picker-head">
+      {# "No workload" compact pill — acts as radio clear, checked by default #}
+      <label class="workload-noop-pill">
+        <input type="radio" name="workload_id" value="" checked>
+        <span class="workload-noop-pill__check" aria-hidden="true"></span>
+        <span class="workload-noop-pill__label">{{ t.workload_none or "No workload" }}</span>
+      </label>
+      <input
+        type="text"
+        id="workload-search"
+        class="workload-search-input wl-search"
+        placeholder="{{ t.workload_search_placeholder_short or 'Search workloads by service, version or name' }}"
+        {% if not target_selected %}disabled{% endif %}>
+    </div>
+
+    {% if not target_selected %}
+      <div class="text-muted small form-hint">
+        {{ t.workload_target_required or "Select a target to show only compatible workloads." }}
+      </div>
+    {% endif %}
+    <div class="text-muted small workload-panel-note">{{ t.workload_panel_showing_default or "Showing the 4 most used templates by default." }}</div>
+    <div class="workload-grid">
+
+      {% for w in workloads %}
+        {% set desc = (w.service_labels | join(' · ')) if w.service_labels else ((w.tags | join(' · ')) if w.tags else (w.cve_context or '')) %}
+        {% set flag_source = ((w.tags | join(' ')) ~ ' ' ~ w.display_name ~ ' ' ~ (w.cve_context or '')) | lower %}
+        {% set flag_label = (t.workload_flag_backdoor or "backdoor") if "backdoor" in flag_source else ((t.workload_flag_cve or "CVE") if w.cve_ids else "") %}
+        {% set status = w.compatibility_status or "compatible" %}
+        <label
+          class="workload-card{% if loop.index > 4 %} workload-card--collapsed{% endif %}{% if status != 'compatible' %} workload-card--incompatible{% endif %}"
+          data-workload-card="true"
+          data-search="{{ (w.display_name ~ ' ' ~ w.id ~ ' ' ~ desc ~ ' ' ~ (w.service_labels | join(' ')) ~ ' ' ~ (w.tags | join(' ')) ~ ' ' ~ (w.cve_ids | join(' ')) ~ ' ' ~ (w.compatibility_reason or '')) | lower }}">
+          <input type="radio" name="workload_id" value="{{ w.id }}"{% if status != 'compatible' %} disabled title="{{ w.compatibility_reason or (t.workload_status_restricted or 'restricted') }}"{% endif %}>
+          <div class="workload-card__top">
+            <span class="workload-card__name">{{ w.display_name }}</span>
+            {% if w.is_stack %}
+              <span class="badge badge-stack badge--sm">{{ t.stack_badge or "stack" }}</span>
+            {% endif %}
+            {% if flag_label %}
+              <span class="workload-card__flag">{{ flag_label }}</span>
+            {% endif %}
+          </div>
+
+          <p class="workload-card__desc" title="{{ desc }}">{{ desc }}</p>
+
+          <div class="workload-card__status{% if status != 'compatible' %} workload-card__status--warn{% endif %}">
+            <span class="workload-card__status-dot" aria-hidden="true"></span>
+            <span>
+              {% if status == 'compatible' %}
+                {{ t.workload_status_compatible or "compatible" }}
+              {% else %}
+                {{ t.workload_status_restricted or "restricted" }}
+              {% endif %}
+            </span>
+            {% if w.compatibility_reason %}
+              <span class="workload-card__status-reason">{{ w.compatibility_reason }}</span>
+            {% endif %}
+          </div>
+
+          <div class="workload-card__services">
+            {% for label in w.service_labels[:3] %}
+              <span class="service-chip{% if w.cve_ids and loop.first %} service-chip--vuln{% endif %}">{{ label }}</span>
+            {% endfor %}
+            {% if w.service_labels | length > 3 %}
+              <span class="service-chip service-chip--muted">{{ (t.workload_more_services or "+{n} more").replace('{n}', ((w.service_labels | length) - 3) | string) }}</span>
+            {% endif %}
+          </div>
+        </label>
+      {% endfor %}
+    </div>
+    <div id="workload-search-empty" class="empty-state workload-search-empty" hidden>
+      {{ t.workload_no_match or "No workloads match this search." }}
+    </div>
+    {% if target_selected and not workloads %}
+      <div class="empty-state workload-search-empty">
+        {{ t.workload_none_compatible or "No workloads are compatible with the selected target." }}
+      </div>
+    {% endif %}
+  </fieldset>
+
+</div>
+{# No inline <script> here: this fragment loads via htmx and its nonce never
+   matches the host page's CSP nonce, so the browser blocks it. The search
+   filter and attacker picker behaviors live in job_new.html's page script,
+   delegated on #workload-panel-container. #}
+{% endif %}

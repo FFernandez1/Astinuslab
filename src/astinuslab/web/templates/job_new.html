@@ -1,0 +1,1399 @@
+{% extends "base.html" %} {% block title %}AstinusLab — {{ t.new_job or "New Job" }}{% endblock %}
+{% block head %}
+<link rel="stylesheet" href="/static/css/pages/jobs.css?v={{ asset_v }}" />
+<link rel="stylesheet" href="/static/css/pages/playground.css?v={{ asset_v }}" />
+{% endblock %} {% block content %}
+<div
+  class="pg-v2-modal-backdrop pg-v2-modal-backdrop--new-job"
+  id="new-job-modal"
+  data-screen-label="New job"
+>
+  <section
+    class="pg-v2-creator pg-v2-creator--wizard"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="new-job-title"
+  >
+    {% if form_error %}<p role="alert" class="alert alert-danger">{{ form_error }}</p>{% endif %}
+    <!-- Window-chrome title bar -->
+    <div class="nj-tbar">
+      <span class="nj-dots" aria-hidden="true"><i></i><i></i><i></i></span>
+      <span class="nj-crumbs"
+        ><span class="nj-crumb">astinuslab</span><span class="nj-sep">/</span
+        ><span class="nj-crumb">jobs</span><span class="nj-sep">/</span
+        ><span class="nj-crumb nj-crumb--cur">new</span></span
+      >
+      <span class="nj-tstat"><span class="nj-led" aria-hidden="true"></span>trusted-local</span>
+      <span class="wiz-page-head__counter nj-counter" id="wiz-step-counter"></span>
+      <a
+        href="/jobs"
+        class="nj-close"
+        title="{{ t.btn_close or 'Close' }}"
+        aria-label="{{ t.btn_close or 'Close' }}"
+        >×</a
+      >
+    </div>
+    <div class="nj-dhead">
+      <span class="nj-eyebrow">{{ t.nav_jobs or "Jobs" }} · {{ t.new_job or "New job" }}</span>
+      <h1 class="nj-title" id="new-job-title">{{ t.new_job or "New job" }}</h1>
+      <span class="nj-hint" id="new-job-hint"></span>
+    </div>
+
+    <!-- Body -->
+    <form id="wiz-form" class="pg-v2-creator-body" action="/jobs/new" method="post">
+      {% include "partials/csrf_input.html" %}
+      <div class="nj-grid">
+      <!-- Vertical tick-rail (restyles the shared .wiz-stepper; JS contract intact) -->
+      <div class="wiz-stepper" id="wiz-stepper">
+        <button type="button" class="wiz-stepper__step" data-step="scenario" data-active>
+          <span class="wiz-stepper__node">1</span
+          ><span class="wiz-stepper__label"
+            >{{ t.wizard_step_target_scenario or "Target & Scenario" }}</span
+          >
+        </button>
+        <button type="button" class="wiz-stepper__step" data-step="workload">
+          <span class="wiz-stepper__node">2</span
+          ><span class="wiz-stepper__label">{{ t.wizard_step_workload or "Workload" }}</span>
+        </button>
+        <button type="button" class="wiz-stepper__step" data-step="configure">
+          <span class="wiz-stepper__node">3</span
+          ><span class="wiz-stepper__label">{{ t.wizard_step_configure or "Configure" }}</span>
+        </button>
+        <button type="button" class="wiz-stepper__step" data-step="review">
+          <span class="wiz-stepper__node">4</span
+          ><span class="wiz-stepper__label">{{ t.wizard_step_review or "Review" }}</span>
+        </button>
+      </div>
+      <div class="nj-content">
+
+      <!-- ════ STEP 1 · TARGET & SCENARIO ════ -->
+      <div class="wiz-stage-panel" data-step="scenario">
+        <p class="wiz-label">{{ t.label_target or "Target image" }}</p>
+        {% set enabled_targets = targets | selectattr('enabled') | list %}
+        <div
+          class="wiz-targets"
+          id="wiz-targets"
+          role="radiogroup"
+          aria-label="{{ t.label_target or 'Target' }}"
+        >
+          {% for tgt in enabled_targets %}
+          <label
+            class="wiz-target{% if loop.index > 8 %} wiz-target--collapsed{% endif %}"
+            data-target-card
+          >
+            <input
+              type="radio"
+              name="target_id"
+              value="{{ tgt.id }}"
+              data-distro="{{ tgt.distro or '' }}"
+              data-version="{{ tgt.version or '' }}"
+              data-family="{{ (tgt.family or '') | lower }}"
+              required
+            />
+            <span class="wiz-target__brackets" aria-hidden="true">
+              <svg class="tl" viewBox="0 0 14 14" width="14" height="14">
+                <path d="M0 5 L0 0 L5 0" stroke="var(--primary)" stroke-width="1.2" fill="none" />
+              </svg>
+              <svg class="tr" viewBox="0 0 14 14" width="14" height="14">
+                <path d="M0 5 L0 0 L5 0" stroke="var(--primary)" stroke-width="1.2" fill="none" />
+              </svg>
+              <svg class="bl" viewBox="0 0 14 14" width="14" height="14">
+                <path d="M0 5 L0 0 L5 0" stroke="var(--primary)" stroke-width="1.2" fill="none" />
+              </svg>
+              <svg class="br" viewBox="0 0 14 14" width="14" height="14">
+                <path d="M0 5 L0 0 L5 0" stroke="var(--primary)" stroke-width="1.2" fill="none" />
+              </svg>
+            </span>
+            <div class="wiz-target__name">
+              {% if tgt.distro and tgt.distro != 'unknown' %}{{ tgt.distro | capitalize }}{% else
+              %}{{ t.target_custom_image or "Custom image" }}{% endif %}
+            </div>
+            <div class="wiz-target__sub">
+              {{ tgt.version if tgt.version and tgt.version != 'unknown' else
+              (t.target_version_unknown or "Version not detected") }}
+            </div>
+          </label>
+          {% endfor %}
+        </div>
+        {% if enabled_targets | length > 8 %}
+        <button
+          type="button"
+          id="wiz-targets-more"
+          class="wiz-btn wiz-btn--ghost wiz-btn--xs new-job-targets-more"
+        >
+          {{ (t.workload_more_services or "+{n} more").replace('{n}', ((enabled_targets | length) -
+          8) | string) }}
+        </button>
+        {% endif %}
+        <div id="wiz-target-hint" class="wiz-hint">
+          {{ t.target_required or "Select a target image to continue." }}
+        </div>
+        <p class="wiz-help">
+          {{ t.target_help or "Base OS image AstinusLab will boot, instrument and destroy. Every job
+          runs against exactly one target." }}
+        </p>
+
+        <p class="wiz-label new-job-scenario-label">{{ t.label_scenario or "Scenario" }}</p>
+        <div
+          class="wiz-scenarios"
+          role="radiogroup"
+          aria-label="{{ t.label_scenario or 'Scenario' }}"
+        >
+          {% for s in scenarios %}{% if s.enabled %} {% set sc_mod = 'immediate' if s.mode ==
+          'immediate' else ('post' if s.mode == 'post_script' else 'manual') %}
+          <label
+            class="wiz-scenario wiz-sc--{{ sc_mod }}"
+            data-scenario-card
+            title="{{ s.description }}"
+          >
+            <input
+              type="radio"
+              name="scenario_id"
+              value="{{ s.id }}"
+              data-mode="{{ s.mode }}"
+              data-script-path="{{ s.script_path or '' }}"
+              data-script-content="{{ (s.script_content or '') | e }}"
+            />
+            <span class="wiz-scenario__check" aria-hidden="true"></span>
+            <div class="wiz-sc-card">
+              <div class="wiz-sc-head">
+                <span class="wiz-sc-icon" aria-hidden="true">
+                  {% if s.mode == 'immediate' %}
+                  <svg
+                    viewBox="0 0 16 16"
+                    width="14"
+                    height="14"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.5"
+                    stroke-linecap="square"
+                  >
+                    <path d="M9 2L5 9h4l-2 5 6-7H9l2-5z" />
+                  </svg>
+                  {% elif s.mode == 'post_script' %}
+                  <svg
+                    viewBox="0 0 16 16"
+                    width="14"
+                    height="14"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.5"
+                    stroke-linecap="square"
+                  >
+                    <rect x="2" y="3" width="12" height="10" />
+                    <path d="M5 7l2 2-2 2M9 11h2" />
+                  </svg>
+                  {% else %}
+                  <svg
+                    viewBox="0 0 16 16"
+                    width="14"
+                    height="14"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.5"
+                    stroke-linecap="square"
+                  >
+                    <circle cx="8" cy="8" r="2" />
+                    <circle cx="8" cy="8" r="5.5" />
+                    <line x1="8" y1="1" x2="8" y2="3" />
+                    <line x1="8" y1="13" x2="8" y2="15" />
+                    <line x1="1" y1="8" x2="3" y2="8" />
+                    <line x1="13" y1="8" x2="15" y2="8" />
+                  </svg>
+                  {% endif %}
+                </span>
+                <span class="wiz-sc-name" data-scenario-name>
+                  {% if s.mode == 'immediate' %}{{ t.mode_immediate or "Immediate Capture" }} {%
+                  elif s.mode == 'post_script' %}{{ t.mode_post_script or "Post-Script Capture" }}
+                  {% else %}{{ t.mode_manual_trigger or "Manual Trigger" }}{% endif %}
+                </span>
+                <span class="wiz-badge wiz-badge--{{ sc_mod }}">
+                  {% if s.mode == 'immediate' %}{{ t.mode_short_immediate or 'immediate' }} {% elif
+                  s.mode == 'post_script' %}{{ t.mode_short_post_script or 'post-script' }} {% else
+                  %}{{ t.mode_short_manual_trigger or 'lab session' }}{% endif %}
+                </span>
+              </div>
+              <p class="wiz-sc-desc">{{ s.description }}</p>
+              <div class="wiz-sc-footer">
+                {% if s.mode == 'immediate' %}
+                <span class="wiz-sc-pill">{{ t.sc_pill_immediate_1 or "memory dump" }}</span>
+                <span class="wiz-sc-pill">{{ t.sc_pill_immediate_2 or "disk image" }}</span>
+                {% elif s.mode == 'post_script' %}
+                <span class="wiz-sc-pill">{{ t.sc_pill_post_1 or "post-workload state" }}</span>
+                <span class="wiz-sc-pill">{{ t.sc_pill_post_2 or "custom artifacts" }}</span>
+                {% else %}
+                <span class="wiz-sc-pill">{{ t.sc_pill_manual_1 or "on-demand capture" }}</span>
+                <span class="wiz-sc-pill">{{ t.sc_pill_manual_2 or "attacker VM optional" }}</span>
+                {% endif %} {% for tech in s.attack_techniques %}<span
+                  class="wiz-sc-pill"
+                  title="{{ t.label_attack_techniques or 'ATT&CK techniques' }}"
+                  >{{ tech }}</span
+                >{% endfor %}
+                <span class="wiz-sc-est">
+                  {% if s.mode == 'immediate' %}{{ t.sc_est_immediate or "~2 min total" }} {% elif
+                  s.mode == 'post_script' %}{{ t.sc_est_post or "~5–30 min" }} {% else %}{{
+                  t.sc_est_manual or "up to 4h session" }}{% endif %}
+                </span>
+              </div>
+            </div>
+          </label>
+          {% endif %}{% endfor %}
+        </div>
+        <div id="wiz-scenario-hint" class="wiz-hint">
+          {{ t.scenario_required or "Select a scenario to continue." }}
+        </div>
+      </div>
+      <!-- /step: scenario -->
+
+      <!-- ════ STEP 2 · WORKLOAD (manual_trigger only) ════ -->
+      <div class="wiz-stage-panel" data-step="workload" hidden>
+        <div class="wl-body">
+          <div id="workload-panel-container" hx-swap="innerHTML"></div>
+        </div>
+      </div>
+      <!-- /step: workload -->
+
+      <!-- ════ STEP 3 · CONFIGURE ════ -->
+      <div class="wiz-stage-panel" data-step="configure" hidden>
+        <div class="cfg-body" id="cfg-body">
+          <div class="cfg-top-row">
+            <!-- Left col: capture type (immediate + post_script) -->
+            <div class="cfg-col-left" id="cfg-col-left">
+              <div id="wiz-capture-panel" hidden>
+                <p class="wiz-label new-job-capture-label">
+                  {{ t.label_capture_type or "Capture" }}
+                </p>
+                <div
+                  class="cfg-capture-cards"
+                  data-chip-group="capture_type"
+                  role="radiogroup"
+                  aria-label="{{ t.label_capture_type or 'Capture type' }}"
+                >
+                  <label
+                    class="wiz-chip cfg-capture-card"
+                    data-value="memory"
+                    title="{{ t.capture_sub_memory or 'RAM dump only' }}"
+                  >
+                    <input
+                      type="radio"
+                      class="sr-only"
+                      name="capture_type"
+                      value="memory"
+                      checked
+                    />
+                    <span class="cfg-cc-icon" aria-hidden="true">
+                      <svg
+                        viewBox="0 0 24 24"
+                        width="16"
+                        height="16"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="1.5"
+                        stroke-linecap="square"
+                      >
+                        <rect x="3" y="8" width="18" height="8" />
+                        <line x1="7" y1="5" x2="7" y2="8" />
+                        <line x1="10" y1="5" x2="10" y2="8" />
+                        <line x1="14" y1="5" x2="14" y2="8" />
+                        <line x1="17" y1="5" x2="17" y2="8" />
+                        <line x1="7" y1="16" x2="7" y2="19" />
+                        <line x1="10" y1="16" x2="10" y2="19" />
+                        <line x1="14" y1="16" x2="14" y2="19" />
+                        <line x1="17" y1="16" x2="17" y2="19" />
+                      </svg>
+                    </span>
+                    <span class="cfg-cc-text">
+                      <span class="cfg-cc-label">{{ t.capture_card_memory or "memory" }}</span>
+                      <span class="cfg-cc-sub">{{ t.capture_sub_memory or "RAM dump only" }}</span>
+                    </span>
+                  </label>
+                  <label
+                    class="wiz-chip cfg-capture-card"
+                    data-value="disk"
+                    title="{{ t.capture_sub_disk or 'Full disk image' }}"
+                  >
+                    <input type="radio" class="sr-only" name="capture_type" value="disk" />
+                    <span class="cfg-cc-icon" aria-hidden="true">
+                      <svg
+                        viewBox="0 0 24 24"
+                        width="16"
+                        height="16"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="1.5"
+                        stroke-linecap="square"
+                      >
+                        <ellipse cx="12" cy="7" rx="9" ry="3" />
+                        <path
+                          d="M3 7v10c0 1.657 4.03 3 9 3s9-1.343 9-3V7"
+                          stroke-linejoin="miter"
+                        />
+                        <path d="M3 12c0 1.657 4.03 3 9 3s9-1.343 9-3" />
+                      </svg>
+                    </span>
+                    <span class="cfg-cc-text">
+                      <span class="cfg-cc-label">{{ t.capture_card_disk or "disk" }}</span>
+                      <span class="cfg-cc-sub">{{ t.capture_sub_disk or "Full disk image" }}</span>
+                    </span>
+                  </label>
+                  <label
+                    class="wiz-chip cfg-capture-card"
+                    data-value="both"
+                    title="{{ t.capture_sub_both or 'Memory + disk' }}"
+                  >
+                    <input type="radio" class="sr-only" name="capture_type" value="both" />
+                    <span class="cfg-cc-icon" aria-hidden="true">
+                      <svg
+                        viewBox="0 0 24 24"
+                        width="16"
+                        height="16"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="1.5"
+                        stroke-linecap="square"
+                      >
+                        <rect x="3" y="3" width="18" height="6" />
+                        <line x1="7" y1="2" x2="7" y2="3" />
+                        <line x1="12" y1="2" x2="12" y2="3" />
+                        <line x1="17" y1="2" x2="17" y2="3" />
+                        <line x1="12" y1="9" x2="12" y2="13" stroke-dasharray="1.5 1.5" />
+                        <ellipse cx="12" cy="16" rx="7" ry="2.5" />
+                        <path
+                          d="M5 16v4c0 1.38 3.13 2.5 7 2.5s7-1.12 7-2.5v-4"
+                          stroke-linejoin="miter"
+                        />
+                      </svg>
+                    </span>
+                    <span class="cfg-cc-text">
+                      <span class="cfg-cc-label">{{ t.capture_card_both or "both" }}</span>
+                      <span class="cfg-cc-sub">{{ t.capture_sub_both or "Memory + disk" }}</span>
+                    </span>
+                  </label>
+                </div>
+              </div>
+            </div>
+            <!-- /.cfg-col-left -->
+
+            <!-- VM Resources -->
+            <div class="cfg-vm-section">
+              <div class="new-job-resource-head">
+                <p class="wiz-label m-0">{{ t.vm_resources or "VM resources" }}</p>
+                <span id="wiz-target-sub" class="new-job-target-sub"></span>
+              </div>
+              <div id="wiz-vm-grid" class="wiz-vm-grid wiz-vm-grid--single">
+                <div class="wiz-vm-col wiz-vm-col--target" id="wiz-vm-col-target">
+                  <div
+                    class="wiz-slider"
+                    data-slider
+                    data-field="vm_vcpus"
+                    data-unit="cores"
+                    data-presets="[1,2,4,8]"
+                    data-default="2"
+                    data-conv="none"
+                  >
+                    <div class="wiz-slider__head">
+                      <span class="wiz-slider__name">vcpus</span>
+                      <label class="wiz-slider__exact"
+                        ><input
+                          type="text"
+                          class="wiz-slider__input"
+                          data-slider-input
+                          inputmode="numeric"
+                          autocomplete="off"
+                        /><span class="wiz-slider__unit">cores</span></label
+                      >
+                    </div>
+                    <div class="wiz-slider__controls">
+                      <input
+                        type="range"
+                        class="wiz-slider__range"
+                        data-slider-range
+                        aria-label="vcpus"
+                      />
+                    </div>
+                    <input type="hidden" name="vm_vcpus" value="" />
+                  </div>
+                  <div
+                    class="wiz-slider"
+                    data-slider
+                    data-field="vm_memory_mb"
+                    data-unit="GB"
+                    data-presets="[2,4,8,16]"
+                    data-default="4096"
+                    data-conv="mb"
+                  >
+                    <div class="wiz-slider__head">
+                      <span class="wiz-slider__name">memory</span>
+                      <label class="wiz-slider__exact"
+                        ><input
+                          type="text"
+                          class="wiz-slider__input"
+                          data-slider-input
+                          inputmode="numeric"
+                          autocomplete="off"
+                        /><span class="wiz-slider__unit">GB</span></label
+                      >
+                    </div>
+                    <div class="wiz-slider__controls">
+                      <input
+                        type="range"
+                        class="wiz-slider__range"
+                        data-slider-range
+                        aria-label="memory"
+                      />
+                    </div>
+                    <input type="hidden" name="vm_memory_mb" value="" />
+                  </div>
+                  <div
+                    class="wiz-slider"
+                    data-slider
+                    data-field="vm_disk_gb"
+                    data-unit="GB"
+                    data-presets="[20,40,80]"
+                    data-default="20"
+                    data-conv="none"
+                  >
+                    <div class="wiz-slider__head">
+                      <span class="wiz-slider__name">disk</span>
+                      <label class="wiz-slider__exact"
+                        ><input
+                          type="text"
+                          class="wiz-slider__input"
+                          data-slider-input
+                          inputmode="numeric"
+                          autocomplete="off"
+                        /><span class="wiz-slider__unit">GB</span></label
+                      >
+                    </div>
+                    <div class="wiz-slider__controls">
+                      <input
+                        type="range"
+                        class="wiz-slider__range"
+                        data-slider-range
+                        aria-label="disk"
+                      />
+                    </div>
+                    <input type="hidden" name="vm_disk_gb" value="" />
+                  </div>
+                </div>
+
+                <div class="wiz-vm-col wiz-vm-col--attacker" id="wiz-vm-col-attacker" hidden>
+                  <div class="wiz-vm-col__head">
+                    <span class="dot"></span><span>{{ t.attacker_vm_label or "attacker" }}</span>
+                    <span class="wiz-vm-col__sub" id="wiz-attacker-sub"></span>
+                  </div>
+                  <div
+                    class="wiz-slider"
+                    data-slider
+                    data-field="attacker_vm_vcpus"
+                    data-unit="cores"
+                    data-presets="[1,2,4,8]"
+                    data-default="2"
+                    data-conv="none"
+                  >
+                    <div class="wiz-slider__head">
+                      <span class="wiz-slider__name">vcpus</span>
+                      <label class="wiz-slider__exact"
+                        ><input
+                          type="text"
+                          class="wiz-slider__input"
+                          data-slider-input
+                          inputmode="numeric"
+                          autocomplete="off"
+                        /><span class="wiz-slider__unit">cores</span></label
+                      >
+                    </div>
+                    <div class="wiz-slider__controls">
+                      <input
+                        type="range"
+                        class="wiz-slider__range"
+                        data-slider-range
+                        aria-label="attacker vcpus"
+                      />
+                    </div>
+                    <input type="hidden" name="attacker_vm_vcpus" value="" />
+                  </div>
+                  <div
+                    class="wiz-slider"
+                    data-slider
+                    data-field="attacker_vm_memory_mb"
+                    data-unit="GB"
+                    data-presets="[2,4,8,16]"
+                    data-default="4096"
+                    data-conv="mb"
+                  >
+                    <div class="wiz-slider__head">
+                      <span class="wiz-slider__name">memory</span>
+                      <label class="wiz-slider__exact"
+                        ><input
+                          type="text"
+                          class="wiz-slider__input"
+                          data-slider-input
+                          inputmode="numeric"
+                          autocomplete="off"
+                        /><span class="wiz-slider__unit">GB</span></label
+                      >
+                    </div>
+                    <div class="wiz-slider__controls">
+                      <input
+                        type="range"
+                        class="wiz-slider__range"
+                        data-slider-range
+                        aria-label="attacker memory"
+                      />
+                    </div>
+                    <input type="hidden" name="attacker_vm_memory_mb" value="" />
+                  </div>
+                  <div
+                    class="wiz-slider"
+                    data-slider
+                    data-field="attacker_vm_disk_gb"
+                    data-unit="GB"
+                    data-presets="[20,40,80]"
+                    data-default="20"
+                    data-conv="none"
+                  >
+                    <div class="wiz-slider__head">
+                      <span class="wiz-slider__name">disk</span>
+                      <label class="wiz-slider__exact"
+                        ><input
+                          type="text"
+                          class="wiz-slider__input"
+                          data-slider-input
+                          inputmode="numeric"
+                          autocomplete="off"
+                        /><span class="wiz-slider__unit">GB</span></label
+                      >
+                    </div>
+                    <div class="wiz-slider__controls">
+                      <input
+                        type="range"
+                        class="wiz-slider__range"
+                        data-slider-range
+                        aria-label="attacker disk"
+                      />
+                    </div>
+                    <input type="hidden" name="attacker_vm_disk_gb" value="" />
+                  </div>
+                </div>
+              </div>
+              <p class="wiz-help new-job-sizing-help">
+                {{ t.vm_sizing_help or "Sizing applies to the target VM. The VM is destroyed when
+                the job finishes." }}
+              </p>
+            </div>
+          </div>
+          <!-- /.cfg-top-row -->
+
+          <!-- Script editor: post_script only — full-width, below top row -->
+          <div id="wiz-script-panel" hidden>
+            <div class="script-header">
+              <p class="wiz-label m-0">{{ t.label_custom_script or "Custom script" }}</p>
+              <div class="new-job-script-tools">
+                <span class="script-default-chip" id="wiz-script-default-info"></span>
+                <div class="script-actions">
+                  <button
+                    type="button"
+                    id="wiz-script-clear"
+                    class="wiz-btn wiz-btn--ghost wiz-btn--xs"
+                  >
+                    {{ t.btn_clear or "clear" }}
+                  </button>
+                  <button
+                    type="button"
+                    id="wiz-script-upload-btn"
+                    class="wiz-btn wiz-btn--ghost wiz-btn--xs"
+                  >
+                    {{ t.btn_upload_sh or "upload .sh" }}
+                  </button>
+                  <input type="file" id="wiz-script-file" accept=".sh,.bash,text/plain" hidden />
+                </div>
+              </div>
+            </div>
+            <textarea
+              name="custom_script"
+              id="wiz-custom-script"
+              class="wiz-custom-script"
+              rows="6"
+              spellcheck="false"
+              placeholder="{{ t.script_placeholder or '#!/bin/bash' }}"
+            ></textarea>
+            <p class="wiz-help new-job-script-help">
+              {{ t.script_capture_hint or "The script runs as root on the guest. Capture happens
+              automatically when the script exits (exit code 0)." }}
+            </p>
+          </div>
+        </div>
+        <!-- /.cfg-body -->
+      </div>
+      <!-- /step: configure -->
+
+      <!-- ════ STEP 4 · REVIEW ════ -->
+      <div class="wiz-stage-panel" data-step="review" hidden>
+        <p class="wiz-label">{{ t.review_launch or "Review & launch" }}</p>
+        <div class="nj-seqbox">
+          <div class="nj-seqbox__h">
+            {{ t.review_preflight_checklist or "Form review" }}<span
+              >{{ t.review_systems_nominal or "Host readiness has not been checked" }}</span
+            >
+          </div>
+          <div class="nj-seqbody" id="wiz-review-content"></div>
+          <div class="nj-seq-auth">{{ t.review_awaiting_auth or "awaiting authorisation" }}</div>
+        </div>
+        <div class="wiz-review-warning">
+          <svg
+            class="wiz-review-warning-icon"
+            viewBox="0 0 16 16"
+            width="13"
+            height="13"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.5"
+            stroke-linecap="square"
+          >
+            <path d="M8 2L14 13H2L8 2z" />
+            <line x1="8" y1="7" x2="8" y2="10" />
+            <line x1="8" y1="11.5" x2="8" y2="12.5" />
+          </svg>
+          <span
+            >{{ t.review_destroy_warning or "The target VM will be permanently destroyed when the
+            job finishes. Evidence files are written to Storage before teardown." }}</span
+          >
+        </div>
+      </div>
+      </div>
+      </div>
+    </form>
+
+    <!-- Footer (outside the scrolling form body so it stays pinned) -->
+    <div class="pg-v2-modal-footer pg-v2-modal-footer--split">
+      <a href="/jobs" class="wiz-btn wiz-btn--ghost">{{ t.btn_cancel or "cancel" }}</a>
+      <div class="new-job-footer-tools">
+        <span class="wiz-launch-ctx" id="wiz-launch-ctx"></span>
+        <div class="pg-v2-modal-footer-actions">
+          <button type="button" id="wiz-back-btn" class="wiz-btn wiz-btn--secondary" hidden>
+            {{ t.wizard_back or "← back" }}
+          </button>
+          <button type="button" id="wiz-next-btn" class="wiz-btn wiz-btn--primary" disabled>
+            {{ t.wizard_next or "next →" }}
+          </button>
+          <button
+            type="submit"
+            form="wiz-form"
+            id="wiz-launch-btn"
+            class="wiz-btn wiz-btn--primary"
+            hidden
+          >
+            {{ t.launch_job or "launch job" }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+<!-- /#new-job-modal -->
+
+<script nonce="{{ request.state.csp_nonce }}">
+  window.WIZ_T = {
+    stepCounter:   {{ (t.wizard_step_counter or "step {n} / {total}") | tojson }},
+    scriptDefault: {{ (t.script_default_prefix or "default:") | tojson }},
+    scriptNoDefault: {{ (t.script_no_default or "No default script — write your own.") | tojson }},
+    launchImmediate: {{ (t.launch_capture_now or "capture now →") | tojson }},
+    launchPost:    {{ (t.launch_queue_job or "queue job →") | tojson }},
+    launchManual:  {{ (t.launch_session or "launch session →") | tojson }},
+    launchDefault: {{ (t.launch_job or "launch job") | tojson }},
+    ctxImmediate:  {{ (t.ctx_immediate or "boots target · captures RAM · destroys VM") | tojson }},
+    ctxPost:       {{ (t.ctx_post_script or "runs script · captures · destroys VM") | tojson }},
+    ctxManual:     {{ (t.ctx_manual_trigger or "provisions workload · awaits your trigger") | tojson }},
+    keyTarget:     {{ (t.col_target or "target") | tojson }},
+    keyScenario:   {{ (t.col_scenario or "scenario") | tojson }},
+    keyCapture:    {{ (t.label_capture_type or "capture") | tojson }},
+    keyScript:     {{ (t.label_custom_script or "script") | tojson }},
+    keyWorkload:   {{ (t.label_workload or "workload") | tojson }},
+    keyAttacker:   {{ (t.attacker_vm_label or "attacker vm") | tojson }},
+    keyVm:         {{ (t.vm_resources or "vm") | tojson }},
+    keyAttackerVm: {{ (t.attacker_vm_resources or "attacker vm") | tojson }},
+    none:          {{ (t.attacker_none or "none") | tojson }},
+    change:        {{ (t.change or "change") | tojson }},
+    titleScenario: {{ (t.wizard_step_target_scenario or "Target & Scenario") | tojson }},
+    titleWorkload: {{ (t.wizard_step_workload or "Workload") | tojson }},
+    titleConfigure: {{ (t.wizard_step_configure or "Configure") | tojson }},
+    titleReview:   {{ (t.review_launch or "Review & launch") | tojson }}
+  };
+</script>
+
+<script nonce="{{ request.state.csp_nonce }}">
+  (function () {
+    "use strict";
+
+    var T = window.WIZ_T || {};
+    var stepNodes = [].slice.call(document.querySelectorAll("#wiz-stepper .wiz-stepper__step"));
+    var panelByKey = {};
+    [].slice.call(document.querySelectorAll(".wiz-stage-panel[data-step]")).forEach(function (p) {
+      panelByKey[p.dataset.step] = p;
+    });
+    var backBtn = document.getElementById("wiz-back-btn");
+    var nextBtn = document.getElementById("wiz-next-btn");
+    var launchBtn = document.getElementById("wiz-launch-btn");
+    var counter = document.getElementById("wiz-step-counter");
+    var launchCtx = document.getElementById("wiz-launch-ctx");
+    var targetHint = document.getElementById("wiz-target-hint");
+    var scenHint = document.getElementById("wiz-scenario-hint");
+    var cur = 0;
+    var workloadLoadedFor = "";
+
+    function selTarget() {
+      return document.querySelector('[name="target_id"]:checked');
+    }
+    function selScenario() {
+      return document.querySelector('[name="scenario_id"]:checked');
+    }
+    function selMode() {
+      var s = selScenario();
+      return s ? s.dataset.mode || "" : "";
+    }
+
+    function stepSequence() {
+      return selMode() === "manual_trigger"
+        ? ["scenario", "workload", "configure", "review"]
+        : ["scenario", "configure", "review"];
+    }
+
+    function requirementMet(key) {
+      if (key === "scenario") return !!selTarget() && !!selScenario();
+      if (key === "configure") {
+        var valid = true;
+        document.querySelectorAll("[data-slider]").forEach(function (wrap) {
+          if (!wrap.closest("[hidden]") && wrap._wizValidate && !wrap._wizValidate()) valid = false;
+        });
+        return valid;
+      }
+      return true;
+    }
+
+    function getLaunchLabel() {
+      var mode = selMode();
+      if (mode === "immediate") return T.launchImmediate;
+      if (mode === "post_script") return T.launchPost;
+      if (mode === "manual_trigger") return T.launchManual;
+      return T.launchDefault;
+    }
+
+    function render() {
+      var seq = stepSequence();
+      var LAST = seq.length - 1;
+      if (cur > LAST) cur = LAST;
+      var activeKey = seq[cur];
+
+      stepNodes.forEach(function (node) {
+        var idx = seq.indexOf(node.dataset.step);
+        node.hidden = idx === -1;
+        if (idx === -1) return;
+        node.toggleAttribute("data-done", idx < cur);
+        node.toggleAttribute("data-active", idx === cur);
+        node.querySelector(".wiz-stepper__node").textContent = idx < cur ? "✓" : String(idx + 1);
+        node.disabled = idx > cur;
+      });
+
+      Object.keys(panelByKey).forEach(function (k) {
+        panelByKey[k].hidden = k !== activeKey;
+      });
+
+      backBtn.hidden = cur === 0;
+      nextBtn.hidden = cur === LAST;
+      launchBtn.hidden = cur !== LAST;
+      nextBtn.disabled = activeKey === "scenario" && !requirementMet(activeKey);
+      launchBtn.textContent = getLaunchLabel();
+
+      if (counter) {
+        counter.textContent = (T.stepCounter || "step {n} / {total}")
+          .replace("{n}", String(cur + 1))
+          .replace("{total}", String(seq.length));
+      }
+
+      if (launchCtx) {
+        var mode = selMode();
+        if (cur === LAST) {
+          if (mode === "immediate") launchCtx.textContent = T.ctxImmediate;
+          else if (mode === "post_script") launchCtx.textContent = T.ctxPost;
+          else if (mode === "manual_trigger") launchCtx.textContent = T.ctxManual;
+          else launchCtx.textContent = "";
+        } else {
+          launchCtx.textContent = "";
+        }
+      }
+
+      // Window-chrome head: per-step title + mode-summary hint (reuses existing keys).
+      var titleEl = document.getElementById("new-job-title");
+      if (titleEl) {
+        var titles = {
+          scenario: T.titleScenario,
+          workload: T.titleWorkload,
+          configure: T.titleConfigure,
+          review: T.titleReview,
+        };
+        if (titles[activeKey]) titleEl.textContent = titles[activeKey];
+      }
+      var hintEl = document.getElementById("new-job-hint");
+      if (hintEl) {
+        var hm = selMode();
+        hintEl.textContent =
+          hm === "immediate"
+            ? T.ctxImmediate
+            : hm === "post_script"
+              ? T.ctxPost
+              : hm === "manual_trigger"
+                ? T.ctxManual
+                : "";
+      }
+
+      if (activeKey === "workload") wizLoadWorkloadPanel();
+      if (activeKey === "configure") applyScenarioMode();
+      if (activeKey === "review") buildReview();
+    }
+
+    function goTo(n) {
+      var seq = stepSequence();
+      var LAST = seq.length - 1;
+      n = Math.max(0, Math.min(LAST, n));
+      if (n > cur && !requirementMet(seq[cur])) {
+        if (seq[cur] === "scenario") {
+          if (!selTarget() && targetHint) targetHint.classList.add("is-visible");
+          if (!selScenario() && scenHint) scenHint.classList.add("is-visible");
+        }
+        return;
+      }
+      cur = n;
+      render();
+    }
+
+    stepNodes.forEach(function (node) {
+      node.addEventListener("click", function () {
+        var idx = stepSequence().indexOf(node.dataset.step);
+        if (idx !== -1 && idx <= cur) goTo(idx);
+      });
+    });
+    backBtn.addEventListener("click", function () {
+      goTo(cur - 1);
+    });
+    nextBtn.addEventListener("click", function () {
+      goTo(cur + 1);
+    });
+
+    // Clicking a selected card again clears it (radios have no native
+    // deselect). Pre-click state is captured on mousedown so the click can
+    // suppress the label's re-check and unset the radio instead.
+    function enableDeselect(input, cardSelector, selectedClass, onDeselect) {
+      var card = input.closest(cardSelector);
+      if (!card) return;
+      var pressedSelected = false;
+      card.addEventListener("mousedown", function () {
+        pressedSelected = input.checked;
+      });
+      card.addEventListener("click", function (e) {
+        if (!pressedSelected) return;
+        e.preventDefault();
+        input.checked = false;
+        card.classList.remove(selectedClass);
+        if (onDeselect) onDeselect();
+        render();
+      });
+    }
+
+    document.querySelectorAll('[name="target_id"]').forEach(function (input) {
+      input.addEventListener("change", function () {
+        document.querySelectorAll("[data-target-card]").forEach(function (c) {
+          c.classList.remove("wiz-target--selected");
+        });
+        input.closest("[data-target-card]").classList.add("wiz-target--selected");
+        if (targetHint) targetHint.classList.remove("is-visible");
+        var sub = document.getElementById("wiz-target-sub");
+        if (sub)
+          sub.textContent =
+            (input.dataset.distro || "custom") +
+            (input.dataset.version ? " " + input.dataset.version : "");
+        workloadLoadedFor = "";
+        render();
+      });
+      enableDeselect(input, "[data-target-card]", "wiz-target--selected", function () {
+        var subEl = document.getElementById("wiz-target-sub");
+        if (subEl) subEl.textContent = "";
+        workloadLoadedFor = "";
+      });
+    });
+
+    var moreTargetsBtn = document.getElementById("wiz-targets-more");
+    if (moreTargetsBtn)
+      moreTargetsBtn.addEventListener("click", function () {
+        document.querySelectorAll(".wiz-target--collapsed").forEach(function (c) {
+          c.classList.remove("wiz-target--collapsed");
+        });
+        moreTargetsBtn.remove();
+      });
+
+    document.querySelectorAll('[name="scenario_id"]').forEach(function (input) {
+      input.addEventListener("change", function () {
+        document.querySelectorAll("[data-scenario-card]").forEach(function (c) {
+          c.classList.remove("wiz-scenario--selected");
+        });
+        input.closest("[data-scenario-card]").classList.add("wiz-scenario--selected");
+        if (input.dataset.mode !== "manual_trigger") {
+          document.getElementById("workload-panel-container").replaceChildren();
+          workloadLoadedFor = "";
+          document.querySelectorAll('[name^="attacker_vm_"]').forEach(function (field) { field.value = ""; });
+        }
+        if (scenHint) scenHint.classList.remove("is-visible");
+        render();
+      });
+      enableDeselect(input, "[data-scenario-card]", "wiz-scenario--selected");
+    });
+
+    // ── Workload panel (htmx fragment, manual_trigger only) ─────────────────
+    function wizLoadWorkloadPanel() {
+      var container = document.getElementById("workload-panel-container");
+      var scenario = selScenario();
+      var target = selTarget();
+      if (!container || !scenario || typeof htmx === "undefined") return;
+      var key = scenario.value + "|" + (target ? target.value : "");
+      if (workloadLoadedFor === key) return;
+      htmx.ajax("GET", "/fragments/workload-panel", {
+        target: container,
+        swap: "innerHTML",
+        values: {
+          scenario_id: scenario.value,
+          target_id: target ? target.value : "",
+        },
+      });
+      workloadLoadedFor = key;
+    }
+
+    // ── Capture chip group ───────────────────────────────────────────────────
+    function wizSelectChip(group, value) {
+      var container = document.querySelector('[data-chip-group="' + group + '"]');
+      if (!container) return;
+      container.querySelectorAll(".wiz-chip").forEach(function (c) {
+        var input = c.querySelector("input");
+        var selected = c.dataset.value === value;
+        c.classList.toggle("wiz-chip--selected", selected);
+        if (input) input.checked = selected;
+      });
+    }
+
+    function wizUpdateCaptureLockedState() {
+      var mode = selMode();
+      document.querySelectorAll('[data-chip-group="capture_type"] .wiz-chip').forEach(function (c) {
+        var modeAllowed = mode === "post_script" || c.dataset.value === "memory";
+        c.classList.toggle("wiz-chip--disabled", !modeAllowed);
+        var input = c.querySelector("input");
+        if (input) input.disabled = !modeAllowed;
+      });
+    }
+
+    document.addEventListener("change", function (e) {
+      var input = e.target.closest('[data-chip-group="capture_type"] .wiz-chip input');
+      if (!input) return;
+      wizSelectChip("capture_type", input.closest(".wiz-chip").dataset.value);
+    });
+
+    // ── Apply scenario mode to Configure step ───────────────────────────────
+    function applyScenarioMode() {
+      var sel = selScenario();
+      var mode = selMode();
+
+      var capturePanel = document.getElementById("wiz-capture-panel");
+      var scriptPanel = document.getElementById("wiz-script-panel");
+      var scriptInfo = document.getElementById("wiz-script-default-info");
+
+      if (capturePanel) capturePanel.hidden = !(mode === "immediate" || mode === "post_script");
+      if (scriptPanel) scriptPanel.hidden = mode !== "post_script";
+
+      // Disk/both captures only valid for post_script; snap back to memory otherwise.
+      if (mode !== "post_script") {
+        var curCap = document.querySelector('input[name="capture_type"]:checked');
+        if (curCap && curCap.value !== "memory") wizSelectChip("capture_type", "memory");
+      }
+      wizUpdateCaptureLockedState();
+
+      if (mode === "post_script" && sel && scriptInfo) {
+        var ta = document.getElementById("wiz-custom-script");
+        var path = sel.dataset.scriptPath || "";
+        var content = sel.dataset.scriptContent || "";
+        if (path) {
+          scriptInfo.textContent = (T.scriptDefault || "default:") + " " + path;
+          if (ta && !ta.value && content) ta.placeholder = content;
+        } else {
+          scriptInfo.textContent = T.scriptNoDefault || "";
+        }
+      }
+    }
+
+    var scriptClear = document.getElementById("wiz-script-clear");
+    if (scriptClear)
+      scriptClear.addEventListener("click", function () {
+        var ta = document.getElementById("wiz-custom-script");
+        if (ta) {
+          ta.value = "";
+          ta.focus();
+        }
+      });
+
+    // ── Upload a local .sh into the script editor (client-side, no upload) ──
+    var scriptUploadBtn = document.getElementById("wiz-script-upload-btn");
+    var scriptFileInput = document.getElementById("wiz-script-file");
+    if (scriptUploadBtn && scriptFileInput) {
+      scriptUploadBtn.addEventListener("click", function () {
+        scriptFileInput.click();
+      });
+      scriptFileInput.addEventListener("change", function () {
+        var file = scriptFileInput.files && scriptFileInput.files[0];
+        if (!file) return;
+        var reader = new FileReader();
+        reader.onload = function () {
+          var ta = document.getElementById("wiz-custom-script");
+          if (ta) {
+            ta.value = String(reader.result || "");
+            ta.focus();
+          }
+        };
+        reader.readAsText(file);
+        scriptFileInput.value = "";
+      });
+    }
+
+    // ── VM resource sliders ─────────────────────────────────────────────────
+    function initSliders() {
+      document.querySelectorAll("[data-slider]").forEach(function (wrap) {
+        var presets = JSON.parse(wrap.dataset.presets || "[1,2,4,8]");
+        var defVal = parseFloat(wrap.dataset.default || presets[0]);
+        var conv = wrap.dataset.conv || "none";
+        var range = wrap.querySelector("[data-slider-range]");
+        var textIn = wrap.querySelector("[data-slider-input]");
+        var hidden = wrap.querySelector('input[type="hidden"]');
+
+        if (!range) return;
+        range.min = "0";
+        range.max = String(presets.length - 1);
+        range.step = "1";
+
+        function toDisplay(val) {
+          return conv === "mb" ? val / 1024 : val;
+        }
+        function toRaw(disp) {
+          return conv === "mb" ? disp * 1024 : disp;
+        }
+        function indexOf(raw) {
+          var d = toDisplay(raw);
+          var idx = presets.indexOf(d);
+          return idx !== -1 ? idx : 0;
+        }
+        function apply(raw) {
+          var disp = toDisplay(raw);
+          range.value = String(indexOf(raw));
+          if (textIn) textIn.value = String(disp);
+          if (hidden) hidden.value = String(raw);
+          if (textIn) { textIn.removeAttribute("aria-invalid"); textIn.setCustomValidity(""); }
+          var pct = (indexOf(raw) / (presets.length - 1)) * 100;
+          wrap.setAttribute("data-fill", String(Math.round(pct)));
+        }
+
+        wrap._wizApplyDefault = function () {
+          apply(defVal);
+        };
+        apply(defVal);
+
+        range.addEventListener("input", function () {
+          apply(toRaw(presets[parseInt(range.value, 10)]));
+        });
+        if (textIn) {
+          textIn.step = conv === "mb" ? "any" : "1";
+          wrap._wizValidate = function () {
+            var raw = toRaw(Number(textIn.value));
+            var valid = textIn.value.trim() !== "" && Number.isSafeInteger(raw) && raw > 0;
+            textIn.setAttribute("aria-invalid", String(!valid));
+            textIn.setCustomValidity(valid ? "" : "Enter a positive whole number of CPUs, GB of disk, or MB of memory.");
+            if (valid) apply(raw);
+            return valid;
+          };
+          textIn.addEventListener("input", wrap._wizValidate);
+        }
+      });
+    }
+
+    // ── Workload panel behaviors ─────────────────────────────────────────────
+    // The fragment loads via htmx, so its own inline <script> would carry a
+    // stale CSP nonce and get blocked. All behavior is delegated here instead.
+    var wlContainer = document.getElementById("workload-panel-container");
+
+    function wlFilterCards(rawValue) {
+      var query = (rawValue || "").trim().toLowerCase();
+      var cards = [].slice.call(document.querySelectorAll('[data-workload-card="true"]'));
+      var empty = document.getElementById("workload-search-empty");
+      var visible = 0;
+      cards.forEach(function (card, index) {
+        var haystack = card.dataset.search || "";
+        var matches = !query || haystack.indexOf(query) !== -1;
+        var shouldShow = query ? matches : index < 4;
+        // collapsed cards are hidden by class; searching must be able to reveal them
+        card.classList.toggle("workload-card--collapsed", !query && index >= 4);
+        card.hidden = !shouldShow;
+        if (shouldShow) visible += 1;
+      });
+      if (empty) empty.hidden = visible !== 0;
+    }
+
+    function wlAttacker() {
+      var picker = wlContainer ? wlContainer.querySelector("[data-attacker-picker]") : null;
+      if (!picker) return null;
+      var a = {
+        sel: picker.querySelector("[data-attacker-select]"),
+        summary: picker.querySelector("[data-attacker-summary]"),
+        change: picker.querySelector("[data-attacker-change]"),
+        clear: picker.querySelector("[data-attacker-clear]"),
+        actionLabel: picker.querySelector("[data-attacker-action-label]"),
+      };
+      return a.sel && a.summary && a.change && a.clear && a.actionLabel ? a : null;
+    }
+
+    function wlSelectedLabel(sel) {
+      var opt = sel.options[sel.selectedIndex];
+      if (!opt || !opt.value) return T.none;
+      return opt.dataset.label || opt.textContent.trim();
+    }
+
+    function wlCloseSelect() {
+      var a = wlAttacker();
+      if (!a) return;
+      a.summary.textContent = wlSelectedLabel(a.sel);
+      a.actionLabel.textContent = a.sel.value ? T.change || "change" : "select";
+      a.clear.hidden = !a.sel.value;
+      a.sel.hidden = true;
+      a.change.hidden = false;
+    }
+
+    function wlDispatchAttacker() {
+      var a = wlAttacker();
+      if (!a) return;
+      document.dispatchEvent(
+        new CustomEvent("wiz:attacker-changed", {
+          detail: { value: a.sel.value, label: wlSelectedLabel(a.sel) },
+        }),
+      );
+    }
+
+    if (wlContainer) {
+      wlContainer.addEventListener("input", function (e) {
+        if (e.target && e.target.id === "workload-search") wlFilterCards(e.target.value);
+      });
+      wlContainer.addEventListener("click", function (e) {
+        var a = wlAttacker();
+        if (!a) return;
+        if (e.target.closest("[data-attacker-change]")) {
+          a.change.hidden = true;
+          a.sel.hidden = false;
+          a.sel.focus();
+        } else if (e.target.closest("[data-attacker-clear]")) {
+          a.sel.value = "";
+          wlCloseSelect();
+          wlDispatchAttacker();
+        }
+      });
+      wlContainer.addEventListener("change", function (e) {
+        if (!e.target.closest("[data-attacker-select]")) return;
+        wlCloseSelect();
+        wlDispatchAttacker();
+      });
+      wlContainer.addEventListener("focusout", function (e) {
+        if (e.target.closest && e.target.closest("[data-attacker-select]")) wlCloseSelect();
+      });
+      document.body.addEventListener("htmx:afterSwap", function (e) {
+        if (e.target !== wlContainer) return;
+        if (!restoredWorkload && selTarget()?.value === savedValues.target_id) {
+          restoreFormFields(wlContainer);
+          restoredWorkload = true;
+        }
+        // Fresh fragment always starts with no attacker; sync UI + attacker column.
+        wlCloseSelect();
+        wlDispatchAttacker();
+      });
+    }
+
+    // ── Attacker column visibility (event from workload panel partial) ──────
+    document.addEventListener("wiz:attacker-changed", function (e) {
+      var has = !!e.detail.value;
+      var grid = document.getElementById("wiz-vm-grid");
+      var atk = document.getElementById("wiz-vm-col-attacker");
+      var sub = document.getElementById("wiz-attacker-sub");
+      if (!atk) return;
+      atk.hidden = !has;
+      if (grid) grid.classList.toggle("wiz-vm-grid--single", !has);
+      if (sub) sub.textContent = has ? e.detail.label || e.detail.value : "";
+      if (has) {
+        atk.querySelectorAll("[data-slider]").forEach(function (wrap) {
+          if (!wrap.querySelector('input[type="hidden"]').value && wrap._wizApplyDefault)
+            wrap._wizApplyDefault();
+        });
+      } else {
+        atk.querySelectorAll('input[type="hidden"]').forEach(function (i) {
+          i.value = "";
+        });
+      }
+    });
+
+    // ── Build review ─────────────────────────────────────────────────────────
+    function row(key, valNode) {
+      var r = document.createElement("div");
+      r.className = "wiz-review-row";
+      var k = document.createElement("span");
+      k.className = "wiz-review-key";
+      k.textContent = key;
+      var v = document.createElement("span");
+      v.className = "wiz-review-val";
+      if (typeof valNode === "string") v.textContent = valNode;
+      else v.appendChild(valNode);
+      r.append(k, v);
+      return r;
+    }
+
+    function section(rows) {
+      var s = document.createElement("div");
+      s.className = "wiz-review-section";
+      rows.forEach(function (r) {
+        s.appendChild(r);
+      });
+      return s;
+    }
+
+    function buildReview() {
+      var tgt = selTarget();
+      var scen = selScenario();
+      var mode = selMode();
+      var content = document.getElementById("wiz-review-content");
+      if (!content) return;
+      content.replaceChildren();
+
+      var head = [];
+      head.push(
+        row(
+          T.keyTarget,
+          tgt ? ((tgt.dataset.distro || "custom") + " " + (tgt.dataset.version || "")).trim() : "—",
+        ),
+      );
+      var scenName = scen
+        ? scen.closest("[data-scenario-card]").querySelector("[data-scenario-name]")
+        : null;
+      head.push(
+        row(T.keyScenario, scenName ? scenName.textContent.trim() : scen ? scen.value : "—"),
+      );
+      var ct = document.querySelector('[name="capture_type"]:checked');
+      if (ct && mode !== "manual_trigger") head.push(row(T.keyCapture, ct.value));
+      content.appendChild(section(head));
+
+      if (mode === "post_script") {
+        var ta = document.getElementById("wiz-custom-script");
+        var script = ta && ta.value.trim() ? ta.value.trim() : scen.dataset.scriptPath || "";
+        var rows = [row(T.keyScript, script ? script.split("\n")[0] : "—")];
+        var sec = section(rows);
+        if (script && script.split("\n").length > 1) {
+          var prev = document.createElement("div");
+          prev.className = "wiz-review-script-preview";
+          prev.textContent = script.split("\n").slice(1, 3).join("\n");
+          sec.appendChild(prev);
+        }
+        content.appendChild(sec);
+      }
+
+      if (mode === "manual_trigger") {
+        var wl = document.querySelector('[name="workload_id"]:checked');
+        var wlName = T.none;
+        if (wl && wl.value) {
+          var card = wl.closest("[data-workload-card]");
+          var nameEl = card ? card.querySelector(".workload-card__name") : null;
+          wlName = nameEl ? nameEl.textContent.trim().split("\n")[0].trim() : wl.value;
+        }
+        var attSel = document.querySelector("[data-attacker-select]");
+        var attName = T.none;
+        if (attSel && attSel.value) {
+          var opt = attSel.options[attSel.selectedIndex];
+          attName = opt ? opt.dataset.label || opt.textContent.trim() : attSel.value;
+        }
+        content.appendChild(section([row(T.keyWorkload, wlName), row(T.keyAttacker, attName)]));
+      }
+
+      function resLine(vcpusName, memName, diskName) {
+        var get = function (n) {
+          var h = document.querySelector('input[type=hidden][name="' + n + '"]');
+          return h ? parseInt(h.value || "0", 10) : 0;
+        };
+        var parts = [];
+        if (get(vcpusName))
+          parts.push(get(vcpusName) + " vcpu" + (get(vcpusName) !== 1 ? "s" : ""));
+        if (get(memName)) parts.push(get(memName) / 1024 + " GB RAM");
+        if (get(diskName)) parts.push(get(diskName) + " GB disk");
+        return parts.join(" · ") || "—";
+      }
+      var vmRows = [row(T.keyVm, resLine("vm_vcpus", "vm_memory_mb", "vm_disk_gb"))];
+      var atkCol = document.getElementById("wiz-vm-col-attacker");
+      if (atkCol && !atkCol.hidden) {
+        vmRows.push(
+          row(
+            T.keyAttackerVm,
+            resLine("attacker_vm_vcpus", "attacker_vm_memory_mb", "attacker_vm_disk_gb"),
+          ),
+        );
+      }
+      content.appendChild(section(vmRows));
+    }
+
+    // ── Submit guard / dialog focus ──────────────────────────────────────────
+    var form = document.getElementById("wiz-form");
+    if (form)
+      form.addEventListener("submit", function (event) {
+        if (!requirementMet("configure")) { event.preventDefault(); goTo(stepSequence().indexOf("configure")); return; }
+        launchBtn.disabled = true;
+        launchBtn.textContent = "⏳ " + launchBtn.textContent;
+      });
+
+    // ── Init ─────────────────────────────────────────────────────────────────
+    initSliders();
+    wizSelectChip("capture_type", "memory");
+    var savedValues = {{ form_values | default({}) | tojson }};
+    var restoredWorkload = false;
+    function restoreFormFields(scope) {
+      Object.keys(savedValues).forEach(function (name) {
+      scope.querySelectorAll('[name="' + name + '"]').forEach(function (field) {
+        if (field.type === "radio") field.checked = field.value === savedValues[name];
+        else field.value = savedValues[name];
+        if (field.checked && name === "target_id") field.closest("[data-target-card]").classList.add("wiz-target--selected");
+        if (field.checked && name === "scenario_id") field.closest("[data-scenario-card]").classList.add("wiz-scenario--selected");
+        var wrap = field.closest("[data-slider]");
+        if (wrap) {
+          var input = wrap.querySelector("[data-slider-input]");
+          input.value = wrap.dataset.conv === "mb" ? Number(savedValues[name]) / 1024 : savedValues[name];
+        }
+      });
+    });
+    }
+    restoreFormFields(document);
+    render();
+    var modal = document.getElementById("new-job-modal");
+    if (modal && window.AlDialog) {
+      window.AlDialog.open(modal, {
+        initial: "input, select, textarea, button",
+        onClose: function () {
+          window.location.href = "/jobs";
+        },
+      });
+      // Click on the backdrop (outside the creator panel) closes the wizard.
+      // Track the press target too, so a text selection that starts inside the
+      // panel and ends on the backdrop does not trigger a close.
+      var pressedBackdrop = false;
+      modal.addEventListener("mousedown", function (e) {
+        pressedBackdrop = e.target === modal;
+      });
+      modal.addEventListener("click", function (e) {
+        if (pressedBackdrop && e.target === modal) window.AlDialog.close();
+      });
+    }
+  })();
+</script>
+{% endblock %}

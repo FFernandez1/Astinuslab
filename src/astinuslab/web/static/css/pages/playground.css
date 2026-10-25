@@ -1,0 +1,2962 @@
+/* Playground-specific compatibility stylesheet. New Playground page rules should prefer css/pages/playground.css once load order is verified. */
+/* AstinusLab — Playground v2. Uses project tokens and .pg-panel/.wiz-btn patterns. */
+
+/* ── Actions row ────────────────────────────────────────────────────────── */
+.pg-v2-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.pg-v2-panel-tools {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+/* ── Target/attacker button accents ─────────────────────────────────────── */
+.pg-btn-target {
+  color: var(--c-info);
+  border-color: var(--c-info-bd);
+}
+
+.pg-btn-target:hover {
+  background: var(--c-info-bg);
+}
+
+.pg-btn-attacker {
+  color: var(--c-danger);
+  border-color: var(--c-danger-bd);
+}
+
+.pg-btn-attacker:hover {
+  background: var(--c-danger-bg);
+}
+
+.pg-btn-network {
+  color: var(--c-purple);
+  border-color: var(--c-purple-bd);
+}
+
+.pg-btn-network:hover {
+  background: var(--c-purple-bg);
+}
+
+/* ── Lab status line ────────────────────────────────────────────────────── */
+/* One row of live lab state, in place of the metric-card strip: same numbers,
+   ~92px less vertical budget spent before the map starts. */
+.pg-statusline {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 18px;
+  padding: 8px 12px;
+  background: var(--surface);
+  border: 1px solid var(--border-2);
+  border-radius: 3px;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--text-sub);
+}
+
+.pg-status-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text);
+}
+
+.pg-status-item[data-tone="danger"] {
+  color: var(--c-danger);
+}
+
+.pg-status-item[data-tone="starting"] {
+  color: var(--c-warning);
+}
+
+.pg-status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.pg-status-dot[data-tone="ok"] {
+  background: var(--c-success);
+}
+
+.pg-status-dot[data-tone="starting"] {
+  background: var(--c-warning);
+}
+
+.pg-status-dot[data-tone="danger"] {
+  background: var(--c-danger);
+}
+
+.pg-status-sep {
+  color: var(--border-2);
+}
+
+.pg-status-review {
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  letter-spacing: 0.04em;
+  padding: 2px 7px;
+  border-radius: 2px;
+  border: 1px solid var(--c-danger-bd);
+  background: transparent;
+  color: var(--c-danger);
+  cursor: pointer;
+}
+
+.pg-status-review:hover {
+  background: var(--c-danger-bg);
+}
+
+.pg-status-review:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+.pg-status-spacer {
+  flex: 1;
+  min-width: 0;
+}
+
+.pg-status-elapsed {
+  display: flex;
+  gap: 6px;
+  color: var(--text-muted);
+}
+
+.pg-status-elapsed-k {
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+@media (max-width: 720px) {
+  .pg-status-spacer {
+    display: none;
+  }
+}
+
+/* ── Layout ─────────────────────────────────────────────────────────────── */
+.pg-v2-layout {
+  display: grid;
+  grid-template-columns: 1fr 400px;
+  gap: 18px;
+  align-items: start;
+}
+
+@media (max-width: 1000px) {
+  .pg-v2-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.pg-v2-main-stack {
+  display: grid;
+  gap: 18px;
+  min-width: 0;
+}
+
+/* Grid items default to min-width:auto, so without this the map section is sized
+   by its widest content and overflows its 1fr track into the detail panel. */
+.pg-v2-main-stack > * {
+  min-width: 0;
+}
+
+#playground-root[data-state="idle"] .pg-v2-layout {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+#playground-root[data-state="idle"] .pg-v2-detail-panel {
+  display: none;
+}
+
+#playground-root[data-state="idle"] .pg-v2-map-canvas {
+  overflow: hidden;
+}
+
+#playground-root[data-state="idle"] .pg-v2-map-world {
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  transform: none;
+}
+
+/* ── Panel (reuse pg-panel from old playground — matches project surface blocks) ── */
+/* Box, head bar and title come from the shared .panel primitive. */
+.pg-panel {
+  margin-bottom: 0;
+}
+
+.pg-panel__body {
+  padding: 12px;
+}
+
+.pg-pill-role {
+  font-size: var(--text-2xs);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 1px 5px;
+  border: 1px solid var(--vm-c);
+  color: var(--vm-c);
+  border-radius: 2px;
+}
+
+.pg-bar-row {
+  display: grid;
+  grid-template-columns: 32px 1fr 32px;
+  gap: 6px;
+  align-items: center;
+  font-size: var(--text-2xs);
+  margin: 2px 0;
+}
+
+.pg-bar-row .k {
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: var(--text-2xs);
+}
+
+.pg-bar {
+  height: 3px;
+  background: var(--surface-3);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.pg-bar > i {
+  display: block;
+  height: 100%;
+  width: var(--pct, 0%);
+  background: var(--vm-c);
+  transition: width 0.4s ease;
+}
+
+.pg-bar.blue > i {
+  background: var(--c-info);
+}
+
+/* ── Map canvas ─────────────────────────────────────────────────────────── */
+.pg-v2-map-canvas {
+  position: relative;
+  /* The map is the only view of the lab now, so it takes the vertical budget
+     the metric cards and role groups used to hold. */
+  height: clamp(460px, 68vh, 780px);
+  overflow: auto;
+  background: var(--bg);
+  border-top: 0;
+  overscroll-behavior: contain;
+  transition: height 180ms ease-out;
+}
+
+#playground-root[data-populated="false"] .pg-v2-map-canvas {
+  height: clamp(210px, 29vh, 360px);
+  overflow: hidden;
+}
+
+.pg-empty-label {
+  position: absolute;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  font: 500 10px/1 var(--font-mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
+#playground-root[data-populated="false"] .pg-empty-label {
+  display: flex;
+}
+
+.pg-v2-map-canvas:focus-visible {
+  outline: 1px solid var(--primary);
+  outline-offset: -1px;
+}
+
+.pg-v2-map-world {
+  --map-scale: 1;
+  position: relative;
+  min-width: 100%;
+  min-height: 100%;
+  width: var(--map-world-w, 900px);
+  height: var(--map-world-h, 520px);
+  transform: scale(var(--map-scale));
+  transform-origin: 0 0;
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
+  background-size: 28px 28px;
+}
+
+/* ── Context bar ────────────────────────────────────────────────────────── */
+/* What the lab IS, before anything is selected: how many segments, how many
+   hosts, how many appliances, what reaches the host network, what broke. */
+.pg-v2-map-context {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 44px;
+  padding: 0 12px;
+  border-bottom: 1px solid var(--border-2);
+  background: var(--surface-2);
+  flex-wrap: wrap;
+}
+
+.pg-v2-map-facts {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+}
+
+.pg-v2-map-facts b {
+  font-weight: 600;
+  color: var(--text);
+}
+
+.pg-v2-map-facts .u {
+  color: var(--text-muted);
+}
+
+.pg-v2-map-facts .dev {
+  color: var(--c-cyan);
+}
+
+.pg-v2-map-facts .sep {
+  color: var(--border-2);
+}
+
+.pg-v2-map-flag {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 7px;
+  border-radius: 2px;
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.pg-v2-map-flag[data-kind="egress"] {
+  border: 1px solid var(--c-warning-bd);
+  background: var(--c-warning-bg);
+  color: var(--c-warning-text);
+}
+
+.pg-v2-map-flag[data-kind="fail"] {
+  border: 1px solid var(--c-danger-bd);
+  background: var(--c-danger-bg);
+  color: var(--c-danger);
+}
+
+.pg-v2-map-flag[data-kind="fail"][data-ok="true"] {
+  border-color: var(--c-success-bd);
+  background: var(--c-success-bg);
+  color: var(--c-success);
+}
+
+.pg-v2-map-rule {
+  width: 1px;
+  height: 22px;
+  background: var(--border-2);
+}
+
+.pg-v2-map-focus {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--text);
+}
+
+.pg-v2-map-focus[data-empty="true"] {
+  font-family: var(--font-body);
+  color: var(--text-muted);
+}
+
+.pg-v2-map-legend {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 13px;
+}
+
+.pg-v2-map-lg {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  color: var(--text-muted);
+}
+
+.pg-v2-map-lg .mk--rail {
+  width: 20px;
+  height: 0;
+  border-top: 2px solid var(--c-purple);
+}
+
+.pg-v2-map-lg .mk--nic {
+  width: 0;
+  height: 13px;
+  border-left: 1px solid var(--border-2);
+}
+
+.pg-v2-map-lg .mk--port {
+  width: 0;
+  height: 13px;
+  border-left: 2px solid var(--c-cyan);
+}
+
+.pg-v2-map-lg .mk--device {
+  width: 12px;
+  height: 12px;
+  border: 1px solid var(--c-cyan);
+  border-radius: 1px;
+  box-shadow: inset 2px 0 var(--c-cyan);
+}
+
+/* ── Segment rails ──────────────────────────────────────────────────────── */
+/* A network is a bus, not a box: the rail is the segment, and the machines on
+   it are the ones that share a broadcast domain. */
+.pg-v2-link-layer .pg-v2-rail {
+  stroke: var(--c-purple);
+  stroke-width: 2;
+  opacity: 0.75;
+}
+
+.pg-v2-link-layer .pg-v2-rail[data-lit="true"] {
+  stroke: var(--primary);
+  opacity: 1;
+}
+
+.pg-v2-link-layer .pg-v2-wire {
+  stroke: var(--border-2);
+  stroke-width: 1;
+}
+
+/* Cyan traces every appliance connection across the whole map at a glance. */
+.pg-v2-link-layer .pg-v2-wire--device {
+  stroke: var(--c-cyan);
+  stroke-width: 2;
+}
+
+.pg-v2-link-layer .pg-v2-port {
+  stroke: var(--c-purple);
+  stroke-width: 2;
+  opacity: 0.45;
+}
+
+.pg-v2-link-layer .pg-v2-port--device {
+  stroke: var(--c-cyan);
+  stroke-width: 3;
+  opacity: 1;
+}
+
+.pg-v2-map-rail-cap .nm {
+  font-size: var(--text-base);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--c-purple);
+}
+
+.pg-v2-map-rail-cap[data-lit="true"] .nm {
+  color: var(--primary);
+}
+
+.pg-v2-map-rail-cap .cidr {
+  font-size: var(--text-xs);
+  color: var(--text);
+}
+
+.pg-v2-map-rail-cap .mode {
+  border: 1px solid var(--border-2);
+  border-radius: 2px;
+  padding: 1px 5px;
+  font-size: var(--text-2xs);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.pg-v2-map-rail-cap .mode[data-egress="true"] {
+  border-color: var(--c-warning-bd);
+  background: var(--c-warning-bg);
+  color: var(--c-warning);
+}
+
+.pg-v2-map-rail-cap .tally {
+  font-size: var(--text-2xs);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.pg-v2-map-rail-cap[data-selected="true"] .nm {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* ── Segment boundary callout ───────────────────────────────────────────── */
+/* Everything two neighbouring segments have in common, split by what the thing
+   is: an appliance put there on purpose, or a host that merely has a leg on
+   both. Both bridge the segments; only one was meant to. */
+.pg-v2-map-link {
+  position: absolute;
+  z-index: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  width: 300px;
+  padding: 9px 11px;
+  border: 1px solid var(--border-2);
+  border-radius: 2px;
+  background: var(--bg);
+}
+
+.pg-v2-map-link .hd {
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.pg-v2-map-link .row {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.pg-v2-map-link .who {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--text);
+}
+
+.pg-v2-map-link .who .pill {
+  border-radius: 2px;
+  padding: 1px 5px;
+  font-size: var(--text-3xs);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.pg-v2-map-link .row[data-kind="device"] .pill {
+  border: 1px solid var(--c-cyan);
+  color: var(--c-cyan);
+}
+
+.pg-v2-map-link .row[data-kind="host"] .pill {
+  border: 1px solid var(--c-warning-bd);
+  background: var(--c-warning-bg);
+  color: var(--c-warning);
+}
+
+.pg-v2-map-link .why {
+  font-size: var(--text-xs);
+  line-height: 1.4;
+  color: var(--text-muted);
+  text-wrap: pretty;
+}
+
+/* Why a node broke, on the node — the panel keeps the full text. */
+/* Capped so a long failure line wraps inside the node instead of widening every
+   broken machine to the maximum. */
+.pg-v2-map-node-fail {
+  max-width: 230px;
+  margin-top: 7px;
+  padding: 5px 6px;
+  background: var(--c-danger-bg);
+  border: 1px solid var(--c-danger-bd);
+  border-radius: 2px;
+  font-size: var(--text-2xs);
+  line-height: 1.35;
+  color: var(--c-danger);
+  overflow: hidden;
+}
+
+.pg-v2-link-layer {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  overflow: visible;
+}
+
+.pg-v2-link-layer line {
+  stroke: var(--border-2);
+  stroke-width: 1.5;
+}
+
+.pg-v2-map-status {
+  min-width: 96px;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  text-align: right;
+}
+
+.pg-v2-map-status[data-state="saving"] {
+  color: var(--c-warning);
+}
+
+.pg-v2-map-status[data-state="saved"] {
+  color: var(--c-success);
+}
+
+.pg-v2-map-status[data-state="error"] {
+  color: var(--c-danger);
+}
+
+/* Map node (HTML positioned absolute in map-world coordinates) */
+/* Boxes grow with their labels, but only so far: past the cap the name
+   ellipsises instead of pushing the rest of the map out of shape. The min keeps
+   a lab of short names from looking ragged, and render-map.js measures the
+   result rather than assuming a width. */
+.pg-v2-map-node {
+  --node-c: var(--c-success);
+  position: absolute;
+  z-index: 1;
+  width: max-content;
+  min-width: 150px;
+  max-width: 280px;
+  border: 1px solid var(--border-2);
+  border-radius: 2px;
+  background: var(--surface);
+  padding: 10px;
+  cursor: grab;
+  user-select: none;
+  touch-action: none;
+}
+
+.pg-v2-map-node:active {
+  cursor: grabbing;
+}
+
+.pg-v2-map-node:focus {
+  outline: none;
+}
+
+.pg-v2-map-node:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 35%, transparent);
+}
+
+.pg-v2-map-node[data-selected="true"] {
+  border-color: var(--node-c);
+}
+
+.pg-v2-map-node[data-type="vm"][data-role="target"] {
+  --node-c: var(--c-info);
+}
+
+.pg-v2-map-node[data-type="vm"][data-role="attacker"] {
+  --node-c: var(--c-danger);
+}
+
+/* Selecting a machine lights the segments it sits on; everything that shares
+   one picks up an underline. Additive only — nothing is dimmed or hidden. */
+.pg-v2-map-node[data-peer="true"] {
+  box-shadow: inset 0 -2px 0 var(--primary);
+}
+
+/* A host that holds an address on two segments says so on its own face. The
+   chip is violet because the fact it states is about segments. */
+.pg-v2-map-segchip {
+  position: absolute;
+  top: -9px;
+  left: 20px;
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 6px;
+  border: 1px solid var(--c-purple-bd);
+  border-radius: 2px;
+  background: var(--bg);
+  color: var(--c-purple);
+  font-family: var(--font-mono);
+  font-size: var(--text-3xs);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* ── Network device ─────────────────────────────────────────────────────── */
+/* A Network Node is a different object, not a recoloured host: wider chassis,
+   a cyan spine, and port bars on the edges where the rails land — so the rail
+   ends AT the appliance rather than passing behind it. */
+/* An appliance carries more per row — function marks and named ports — so it
+   starts wider and is allowed a little further before it clips. */
+.pg-v2-map-node.pg-v2-map-device {
+  --node-c: var(--c-cyan);
+  min-width: 210px;
+  max-width: 340px;
+  padding: 9px 10px 9px 13px;
+  border-color: var(--c-cyan-bd);
+  box-shadow: inset 3px 0 var(--c-cyan);
+}
+
+.pg-v2-map-device[data-state="failed"] {
+  border-color: var(--c-danger-bd);
+  box-shadow: inset 3px 0 var(--c-danger);
+}
+
+.pg-v2-map-device[data-peer="true"] {
+  box-shadow:
+    inset 3px 0 var(--c-cyan),
+    inset 0 -2px 0 var(--primary);
+}
+
+.pg-v2-map-device::before,
+.pg-v2-map-device::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  margin-left: -7px;
+  width: 14px;
+  height: 4px;
+  background: var(--c-cyan);
+}
+
+.pg-v2-map-device::before {
+  top: -3px;
+}
+
+.pg-v2-map-device::after {
+  bottom: -3px;
+}
+
+.pg-v2-map-device .dev-head {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.pg-v2-map-device .dev-head svg {
+  color: var(--c-cyan);
+  flex: 0 0 auto;
+}
+
+.pg-v2-map-device .dev-name {
+  flex: 1;
+  min-width: 0;
+  color: var(--text);
+  font-size: var(--text-base);
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pg-v2-map-device .dev-kind {
+  border: 1px solid var(--c-cyan);
+  border-radius: 2px;
+  padding: 1px 5px;
+  font-size: var(--text-3xs);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--c-cyan);
+}
+
+.pg-v2-map-device .dev-img {
+  margin: 5px 0 7px;
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  letter-spacing: 0.03em;
+  color: var(--text-muted);
+}
+
+/* What the appliance is for, straight off the catalog's function_tags. */
+.pg-v2-map-device .dev-fns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.pg-v2-map-device .dev-fn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 6px;
+  border: 1px solid var(--c-cyan-bd);
+  border-radius: 2px;
+  background: var(--c-cyan-bg);
+  color: var(--c-cyan);
+  font-family: var(--font-mono);
+  font-size: var(--text-3xs);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* Which leg faces which segment — the thing you actually want from a firewall.
+   One grid for every port, so the three columns line up down the chassis and a
+   segment name longer than its column ellipsises instead of running over the
+   address beside it. The address column keeps the width a full IPv4 needs. */
+.pg-v2-map-device .dev-ports {
+  display: grid;
+  grid-template-columns: max-content minmax(0, max-content) minmax(96px, 1fr);
+  column-gap: 7px;
+  row-gap: 3px;
+  align-items: baseline;
+  padding-top: 7px;
+  border-top: 1px solid var(--border);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+}
+
+.pg-v2-map-device .dev-port {
+  display: contents;
+}
+
+.pg-v2-map-device .dev-port .pn {
+  color: var(--text-muted);
+}
+
+.pg-v2-map-device .dev-port .pseg {
+  color: var(--c-purple);
+  font-size: var(--text-2xs);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pg-v2-map-device .dev-port .pip {
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pg-v2-map-device .pg-bar-row {
+  margin-top: 6px;
+}
+
+/* A network is no longer a card floating among the machines — it is the rail,
+   and this is the rail's cap: the segment's identity and the hit target that
+   selects it. Vertical drag reorders the stack; the rail spans the map, so
+   horizontal position would mean nothing. */
+.pg-v2-map-node[data-type="network"] {
+  --node-c: var(--c-purple);
+  width: max-content;
+  min-width: 0;
+  max-width: 520px;
+  padding: 2px 0;
+  display: flex;
+  align-items: baseline;
+  gap: 9px;
+  border: 0;
+  background: transparent;
+  font-family: var(--font-mono);
+  white-space: nowrap;
+}
+
+.pg-v2-map-node[data-type="network"][data-state="pending"] .nm {
+  color: var(--c-warning);
+}
+
+.pg-v2-map-node[data-type="network"][data-state="failed"] .nm {
+  color: var(--c-danger);
+}
+
+.pg-v2-map-node[data-type="network"][data-state="destroyed"] {
+  opacity: 0.55;
+}
+
+.pg-v2-map-node[data-type="network"] .corner {
+  display: none;
+}
+
+.pg-v2-map-node .corner {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  border-color: var(--node-c);
+  border-style: solid;
+  border-width: 0;
+  pointer-events: none;
+}
+
+.pg-v2-map-node .corner.tl {
+  top: -1px;
+  left: -1px;
+  border-top-width: 2px;
+  border-left-width: 2px;
+}
+
+.pg-v2-map-node .corner.tr {
+  top: -1px;
+  right: -1px;
+  border-top-width: 2px;
+  border-right-width: 2px;
+}
+
+.pg-v2-map-node .corner.bl {
+  bottom: -1px;
+  left: -1px;
+  border-bottom-width: 2px;
+  border-left-width: 2px;
+}
+
+.pg-v2-map-node .corner.br {
+  bottom: -1px;
+  right: -1px;
+  border-bottom-width: 2px;
+  border-right-width: 2px;
+}
+
+.pg-v2-map-node .node-head {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 6px;
+}
+
+.pg-v2-map-node .dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--node-c);
+  flex: 0 0 auto;
+}
+
+.pg-v2-map-node .node-name {
+  flex: 1;
+  min-width: 0;
+  color: var(--text);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pg-v2-map-node .role-pill {
+  border: 1px solid var(--node-c);
+  color: var(--node-c);
+  border-radius: 2px;
+  padding: 1px 5px;
+  font-size: var(--text-3xs);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* One grid for the whole block rather than one per row: on a provisioned
+   machine the key is the segment name, and a 32px column had it spilling over
+   the address it labels. The column sizes to the longest key on the card, so
+   keys stay aligned down the card, and the address column keeps the width a
+   full IPv4 needs before a long segment name is made to ellipsise. */
+.pg-v2-map-node .node-stats {
+  display: grid;
+  grid-template-columns: minmax(0, max-content) minmax(84px, 1fr);
+  column-gap: 6px;
+  row-gap: 4px;
+  margin: 4px 0;
+  font-size: var(--text-xs);
+}
+
+.pg-v2-map-node .node-stat {
+  display: contents;
+}
+
+.pg-v2-map-node .node-stat .k {
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: var(--text-2xs);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pg-v2-map-node .node-stat .v {
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── Detail panel ───────────────────────────────────────────────────────── */
+.pg-v2-detail-panel {
+  background: var(--surface);
+  border: 1px solid var(--border-2);
+  border-radius: 3px;
+  overflow-y: visible;
+  max-height: none;
+}
+
+/* Two-column mode only (matches .pg-v2-layout): pin the panel and give it its own
+   scrollport, so reaching Capture / Destroy no longer scrolls the lab map and the
+   machine you are acting on out of view. 44px is the eng-bar above the scroll
+   area; the remaining 24px is the 12px gap kept above and below the panel. */
+@media (min-width: 1001px) {
+  .pg-v2-detail-panel {
+    position: sticky;
+    top: 12px;
+    max-height: calc(100vh - 68px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+}
+
+.pg-v2-detail-panel:empty::after {
+  content: "Select a VM or network node to see details.";
+  display: block;
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  text-align: center;
+  padding: 40px 16px;
+}
+
+.pg-v2-detail-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border-2);
+  gap: 10px;
+}
+
+.pg-v2-detail-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text);
+  font-size: var(--text-base);
+  font-weight: 600;
+}
+
+.pg-v2-detail-title .dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+}
+
+.pg-v2-detail-body {
+  padding: 12px;
+  display: grid;
+  gap: 12px;
+}
+
+.pg-v2-section {
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  background: var(--bg);
+  padding: 10px 12px;
+}
+
+.pg-v2-section .section-title {
+  font-size: var(--text-2xs);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.pg-v2-kv {
+  display: grid;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.pg-v2-kv-row {
+  display: grid;
+  grid-template-columns: 60px 1fr;
+  gap: 8px;
+  font-size: var(--text-xs);
+  align-items: center;
+}
+
+.pg-v2-kv-row .k {
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: var(--text-2xs);
+}
+
+.pg-v2-kv-row .v {
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pg-v2-net-row {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--border-2);
+  border-radius: 2px;
+  background: var(--surface);
+  padding: 5px 6px 5px 8px;
+}
+
+.pg-v2-net-main {
+  min-width: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+}
+
+.pg-v2-net-name {
+  color: var(--text);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pg-v2-net-meta {
+  color: var(--text-muted);
+  font-size: var(--text-2xs);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pg-v2-ssh-box {
+  margin-top: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--border-2);
+  background: var(--bg);
+  border-radius: 2px;
+  padding: 6px 8px;
+}
+
+.pg-v2-ssh-box code {
+  color: var(--primary);
+  font-size: var(--text-xs);
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pg-v2-capture-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.pg-v2-services {
+  display: grid;
+  gap: 7px;
+  margin-top: 8px;
+}
+
+.pg-v2-service-row {
+  border: 1px solid var(--border-2);
+  border-radius: 2px;
+  background: var(--surface);
+  padding: 7px 8px;
+  display: grid;
+  gap: 5px;
+}
+
+.pg-v2-service-main {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.pg-v2-service-name {
+  color: var(--text);
+  font-weight: 600;
+  font-size: var(--text-xs);
+}
+
+.pg-v2-service-status {
+  color: var(--text-muted);
+  font-size: var(--text-2xs);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.pg-v2-service-url {
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pg-v2-service-url a {
+  color: var(--primary);
+}
+
+.pg-v2-service-creds {
+  margin: 0;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  white-space: pre-wrap;
+}
+
+.pg-v2-nics {
+  display: grid;
+  gap: 7px;
+  margin-top: 8px;
+}
+
+.pg-v2-nic-row {
+  border: 1px solid var(--border-2);
+  border-radius: 2px;
+  background: var(--surface);
+  padding: 7px 8px;
+  display: grid;
+  gap: 5px;
+}
+
+.pg-v2-nic-row[data-state="missing"] {
+  border-color: var(--c-warning-bd);
+  background: var(--c-warning-bg);
+}
+
+.pg-v2-nic-main,
+.pg-v2-nic-attach {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.pg-v2-nic-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text);
+  font-weight: 600;
+  font-size: var(--text-xs);
+}
+
+.pg-v2-nic-status {
+  color: var(--text-muted);
+  font-size: var(--text-2xs);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.pg-v2-nic-meta,
+.pg-v2-nic-diag {
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  color: var(--text-muted);
+  overflow-wrap: anywhere;
+}
+
+.pg-v2-nic-diag {
+  color: var(--c-warning);
+}
+
+.pg-v2-nic-select {
+  min-width: 0;
+  width: 100%;
+}
+
+/* ── Capture console (reuses pg-stream from old playground) ─────────────── */
+.pg-v2-console-body {
+  padding: 0;
+}
+
+.pg-stream-head {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border-2);
+  font-size: var(--text-2xs);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.pg-stream-log {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--text);
+  margin: 0;
+  max-height: 180px;
+  overflow: auto;
+  white-space: pre-wrap;
+  padding: 10px 12px;
+  background: var(--c-terminal-bg, #0f1113);
+}
+
+/* ── Modal ──────────────────────────────────────────────────────────────── */
+.pg-v2-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-overlay);
+  background: var(--overlay-backdrop);
+  /* The scrim colour is shared, but this blur stays at 8px: it is a pinned
+     mockup value, asserted by tests/python/playground/test_ui.py's
+     test_playground_modal_css_matches_mockup_layout_contract. Retuning it to
+     the shared --overlay-blur is a design decision, not a cleanup. */
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.pg-v2-modal-backdrop[hidden] {
+  display: none;
+}
+
+.pg-v2-creator {
+  width: 100%;
+  max-width: 560px;
+  /* Use the fixed backdrop's available height, including under CSS zoom.
+     Its 48px vertical padding plus this 32px keeps the existing 80px clearance. */
+  max-height: calc(100% - 32px);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  border: 1px solid var(--border-2);
+  border-radius: var(--radius-md, 3px);
+  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.38);
+}
+
+.pg-v2-creator--wizard {
+  max-width: 760px;
+}
+
+.pg-modal-narrow {
+  max-width: 400px;
+}
+
+.pg-v2-modal-head {
+  padding: 12px 16px;
+  background: var(--surface);
+}
+
+.pg-v2-title-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.pg-v2-modal-eyebrow {
+  color: var(--text-muted);
+  font-size: var(--text-2xs);
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.pg-v2-modal-head .pg-panel__title {
+  color: var(--text);
+  font-size: var(--text-md);
+  font-weight: 700;
+  letter-spacing: -0.005em;
+  text-transform: none;
+}
+
+.pg-v2-modal-close {
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  font-size: var(--text-lg);
+  line-height: 1;
+}
+
+.pg-v2-creator-body {
+  padding: 14px;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.pg-v2-create-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.pg-create-grid--stack {
+  grid-template-columns: 1fr;
+}
+
+.pg-v2-workload-picker {
+  display: grid;
+  gap: 8px;
+}
+
+.workload-search-input {
+  width: 100%;
+  min-height: 30px;
+  border: 1px solid var(--border-2);
+  border-radius: 2px;
+  background: var(--bg);
+  color: var(--text);
+  padding: 6px 9px;
+  font: 12px var(--font-mono);
+}
+
+.pg-v2-workload-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: min(46vh, 360px);
+  overflow-y: auto;
+  padding-right: 2px;
+}
+
+.pg-v2-workload-card {
+  border: 1px solid var(--border-2);
+  border-radius: 2px;
+  background: var(--bg);
+  padding: 6px 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  text-align: left;
+}
+
+.pg-v2-workload-card[data-active="true"] {
+  border-color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 8%, var(--surface));
+}
+
+.pg-v2-workload-card[data-disabled="true"] {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.pg-v2-field-card {
+  border: 1px solid var(--border-2);
+  border-radius: var(--radius-md, 3px);
+  background: var(--bg);
+  padding: 9px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.pg-v2-field-card .field-label {
+  color: var(--text-muted);
+  font-size: var(--text-2xs);
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.pg-v2-field-card .value {
+  margin-top: 0;
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: var(--text-base);
+  font-weight: 600;
+}
+
+.pg-v2-creator .pg-net-input:focus,
+.pg-v2-creator .workload-search-input:focus {
+  outline: 2px solid var(--primary);
+  outline-offset: 1px;
+  border-color: var(--primary);
+}
+
+/* .pg-form-error is now an alias of the shared .form-error in components.css. */
+
+.pg-form-notice {
+  margin: 4px 0 0;
+  color: var(--c-info);
+  font-size: var(--text-xs);
+}
+
+/* The shared alert region carries both failures and notices; a substituted
+   subnet must not read as an error. */
+#pg-alerts[data-severity="notice"] {
+  border-color: var(--c-info);
+  border-left-color: var(--c-info);
+  background: transparent;
+  color: var(--c-info);
+}
+
+.pg-v2-infobox {
+  border: 1px solid var(--c-info-bd);
+  border-left: 2px solid var(--c-info);
+  border-radius: 2px;
+  background: var(--c-info-bg);
+  color: var(--c-info);
+  padding: 5px 7px;
+  font-size: var(--text-2xs);
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.pg-v2-infobox-line + .pg-v2-infobox-line {
+  margin-top: 3px;
+}
+
+.pg-form-warning {
+  margin: 2px 0 0;
+  border: 1px solid var(--c-warning-bd);
+  border-left: 2px solid var(--c-warning);
+  border-radius: 2px;
+  background: var(--c-warning-bg);
+  color: var(--c-warning);
+  padding: 7px 9px;
+  font-size: var(--text-xs);
+}
+
+.pg-v2-modal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  border-top: 1px solid var(--border-2);
+  padding-top: 10px;
+  margin-top: 10px;
+  background: transparent;
+}
+
+.pg-v2-modal-footer--split {
+  justify-content: space-between;
+}
+
+.pg-v2-modal-footer-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pg-v2-modal-footer [hidden] {
+  display: none !important;
+}
+
+/* ── Keyboard focus for custom button-like controls ─────────────────────── */
+.pg-v2-workload-card:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+/* ── Responsive ─────────────────────────────────────────────────────────── */
+@media (max-width: 720px) {
+  .pg-v2-create-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ═══ Manifest creator (HUD) — scoped to #create-vm-modal's creator ═══════
+   All selectors are gated by .pg-v2-creator--hud so the shared .wiz-* primitives
+   and the New Job wizard are never touched. Sizes come from the shared type
+   ladder in tokens.css; only the spacing rhythm below is local to the HUD. */
+.pg-v2-creator--hud {
+  max-width: 1040px;
+  font-family: var(--font-mono);
+  --tn: 140ms;
+  --hud-pad-card: 11px 12px;
+  --hud-gap-card: 6px;
+  --hud-gap-sec: 20px;
+}
+
+.pg-v2-creator--hud .pg-v2-creator-body {
+  padding: 0;
+  gap: 0;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.pg-v2-creator--hud #create-vm-warning,
+.pg-v2-creator--hud #spawn-error {
+  margin: 8px 18px 0;
+}
+
+.pg-v2-creator--hud .pg-v2-modal-footer {
+  padding: 13px 18px;
+  margin: 0;
+  border-top: 1px solid var(--border-2);
+  background: var(--surface);
+}
+
+/* title bar */
+.pg-hud-tbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 14px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+
+.pg-hud-dots {
+  display: flex;
+  gap: 6px;
+}
+
+.pg-hud-dots i {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  display: block;
+}
+
+.pg-hud-dots i:nth-child(1) {
+  background: var(--c-danger);
+}
+
+.pg-hud-dots i:nth-child(2) {
+  background: var(--c-warning);
+}
+
+.pg-hud-dots i:nth-child(3) {
+  background: var(--primary);
+}
+
+.pg-hud-crumbs {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.pg-hud-crumb--cur {
+  color: var(--text);
+}
+
+.pg-hud-sep {
+  color: var(--border-2);
+}
+
+.pg-hud-tstat {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--text-2xs);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.pg-hud-led {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--primary);
+  animation: pgHudPulse 2.4s ease-in-out infinite;
+}
+
+@keyframes pgHudPulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.45;
+  }
+}
+
+.pg-hud-counter {
+  font-size: var(--text-2xs);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.pg-hud-x {
+  width: 24px;
+  height: 24px;
+  border: 1px solid var(--border-2);
+  background: transparent;
+  color: var(--text-muted);
+  border-radius: 2px;
+  cursor: pointer;
+  font-size: var(--text-md);
+  line-height: 1;
+  transition: all var(--tn);
+}
+
+.pg-hud-x:hover {
+  border-color: var(--c-danger);
+  color: var(--c-danger);
+}
+
+.pg-hud-x:focus-visible {
+  outline: 2px solid var(--c-danger);
+  outline-offset: 2px;
+}
+
+/* head */
+.pg-hud-dhead {
+  padding: 14px 20px 2px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.pg-hud-dhead .pg-panel__title {
+  font-family: var(--font-body);
+  font-weight: 800;
+  font-size: var(--text-xl);
+  letter-spacing: -0.012em;
+  margin: 2px 0 0;
+  color: var(--text);
+  text-transform: none;
+}
+
+.pg-hud-hint {
+  font-size: var(--text-xs);
+  color: var(--text-sub);
+  min-height: 1em;
+}
+
+.pg-hud-hint::before {
+  content: "// ";
+  color: var(--primary);
+}
+
+.pg-hud-hint:empty::before {
+  content: "";
+}
+
+/* grid: rail | content | manifest */
+.pg-hud-grid {
+  display: grid;
+  grid-template-columns: 168px 1fr 236px;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.pg-hud-rail {
+  border-right: 1px solid var(--border);
+  padding: 18px 14px;
+  display: flex;
+  flex-direction: column;
+}
+
+.pg-hud-tick {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 10px 0 10px 4px;
+  cursor: pointer;
+  color: var(--text-muted);
+  background: transparent;
+  border: 0;
+  text-align: left;
+  border-radius: 2px;
+  font: inherit;
+}
+
+.pg-hud-tick:disabled {
+  cursor: not-allowed;
+}
+
+.pg-hud-tick:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+.pg-hud-tick__box {
+  width: 19px;
+  height: 19px;
+  border: 1px solid var(--border-2);
+  background: var(--bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--text-3xs);
+  color: var(--text-muted);
+  flex: 0 0 19px;
+  transition: all var(--tn);
+}
+
+.pg-hud-tick__lab {
+  font-size: var(--text-2xs);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  transition: color var(--tn);
+}
+
+.pg-hud-tick + .pg-hud-tick::before {
+  content: "";
+  position: absolute;
+  left: 12.5px;
+  top: -10px;
+  height: 20px;
+  width: 1px;
+  background: var(--border-2);
+  transition: background var(--tn);
+}
+
+.pg-hud-tick[data-done],
+.pg-hud-tick[data-active] {
+  color: var(--text);
+}
+
+.pg-hud-tick[data-done] .pg-hud-tick__box {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: var(--primary-fg);
+}
+
+.pg-hud-tick[data-done]::before,
+.pg-hud-tick[data-active]::before {
+  background: var(--primary);
+}
+
+.pg-hud-tick[data-active] {
+  color: var(--primary);
+}
+
+.pg-hud-tick[data-active] .pg-hud-tick__box {
+  border-color: var(--primary);
+  color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-glow);
+}
+
+/* content */
+.pg-hud-content {
+  padding: 18px 22px 22px;
+  overflow: auto;
+  min-height: 0;
+}
+
+/* Panel entry animation is gated to genuine step/role changes (and first paint)
+   via data-enter on .pg-hud-content (set in wizard.js). Same-step re-renders —
+   regenerate name, draft-network add — must not replay it as a flicker. */
+.pg-hud-content[data-enter="true"] .pg-hud-panel {
+  animation: pgHudRise var(--tn) ease both;
+}
+
+@keyframes pgHudRise {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.pg-hud-lbl {
+  font-size: var(--text-2xs);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin: 0 0 9px;
+}
+
+.pg-hud-lbl::before {
+  content: "› ";
+  color: var(--primary);
+}
+
+.pg-hud-help {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  line-height: 1.55;
+  margin: 10px 0 0;
+  max-width: 62ch;
+}
+
+.pg-hud-gap {
+  margin-top: var(--hud-gap-sec);
+}
+
+.pg-hud-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.pg-hud-field-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.pg-hud-field-meta span {
+  font-size: var(--text-3xs);
+  color: var(--text-muted);
+}
+
+.pg-v2-creator--hud .pg-net-input {
+  flex: 1;
+  background: var(--bg);
+  border: 1px solid var(--border-2);
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  padding: 8px 11px;
+  border-radius: 2px;
+}
+
+/* OS image — corner-bracket select grid */
+.pg-hud-images {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: var(--hud-gap-card);
+}
+
+.pg-hud-image {
+  position: relative;
+  display: block;
+  padding: var(--hud-pad-card);
+  border: 1px solid var(--border-2);
+  background: var(--bg);
+  cursor: pointer;
+  transition:
+    border-color var(--tn),
+    background var(--tn);
+}
+
+.pg-hud-image:hover {
+  border-color: var(--text-muted);
+}
+
+.pg-hud-image:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+.pg-hud-image__n {
+  display: block;
+  font-size: var(--text-sm);
+  color: var(--text);
+}
+
+.pg-hud-image__s {
+  display: block;
+  font-size: var(--text-3xs);
+  color: var(--text-muted);
+  margin-top: 2px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.pg-hud-image[data-selected="true"] {
+  border-color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 6%, transparent);
+}
+
+.pg-hud-image__bkt {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity var(--tn);
+}
+
+.pg-hud-image[data-selected="true"] .pg-hud-image__bkt {
+  opacity: 1;
+}
+
+.pg-hud-image__bkt b {
+  position: absolute;
+  width: 7px;
+  height: 7px;
+  border: 1px solid var(--primary);
+}
+
+.pg-hud-image__bkt b:nth-child(1) {
+  top: 3px;
+  left: 3px;
+  border-right: 0;
+  border-bottom: 0;
+}
+
+.pg-hud-image__bkt b:nth-child(2) {
+  top: 3px;
+  right: 3px;
+  border-left: 0;
+  border-bottom: 0;
+}
+
+.pg-hud-image__bkt b:nth-child(3) {
+  bottom: 3px;
+  left: 3px;
+  border-right: 0;
+  border-top: 0;
+}
+
+.pg-hud-image__bkt b:nth-child(4) {
+  bottom: 3px;
+  right: 3px;
+  border-left: 0;
+  border-top: 0;
+}
+
+/* workload — equal-height detail tiles (override the compact-row base) */
+.pg-hud-wlhead {
+  display: flex;
+  gap: 9px;
+  align-items: center;
+  margin-bottom: 11px;
+}
+
+.pg-v2-creator--hud .workload-search-input {
+  flex: 1;
+  min-height: 0;
+  font-size: var(--text-xs);
+  padding: 6px 9px;
+}
+
+.pg-v2-creator--hud .pg-hud-wlgrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--hud-gap-card);
+  max-height: min(48vh, 380px);
+  overflow-y: auto;
+  padding-right: 2px;
+}
+
+.pg-v2-creator--hud .pg-hud-wlcard {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  gap: 7px;
+  min-height: 94px;
+  padding: var(--hud-pad-card);
+  border: 1px solid var(--border-2);
+  border-radius: 2px;
+  background: var(--bg);
+  cursor: pointer;
+}
+
+.pg-v2-creator--hud .pg-hud-wlcard[data-on="true"] {
+  border-color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 6%, transparent);
+}
+
+.pg-v2-creator--hud .pg-hud-wlcard[data-disabled="true"] {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.pg-hud-wlcard__top {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.pg-hud-wlcard__n {
+  flex: 1;
+  min-width: 0;
+  font-weight: 700;
+  font-size: var(--text-sm);
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pg-hud-wlcard__desc {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  line-height: 1.45;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.pg-hud-wlcard__foot {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: auto;
+  flex-wrap: wrap;
+}
+
+.pg-hud-wlcard__st {
+  margin-left: auto;
+  font-size: var(--text-3xs);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.pg-hud-wlcard[data-on="true"] .pg-hud-wlcard__st {
+  color: var(--primary);
+}
+
+.pg-hud-wlcard[data-disabled="true"] .pg-hud-wlcard__st {
+  color: var(--c-danger);
+}
+
+.pg-hud-chip {
+  flex: 0 0 auto;
+  font-size: var(--text-3xs);
+  text-transform: uppercase;
+  color: var(--text-muted);
+  border: 1px solid var(--border-2);
+  padding: 1px 5px;
+  white-space: nowrap;
+}
+
+.pg-hud-flaw {
+  flex: 0 0 auto;
+  font-size: var(--text-3xs);
+  color: var(--c-danger);
+  border: 1px solid var(--c-danger-bd);
+  padding: 1px 5px;
+  white-space: nowrap;
+}
+
+/* networks — compact aligned rows in one box */
+.pg-hud-nethead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 9px;
+}
+
+.pg-hud-nethead .pg-hud-lbl {
+  margin: 0;
+}
+
+.pg-hud-netadd {
+  font-family: var(--font-mono);
+  font-size: var(--text-3xs);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  padding: 2px;
+  transition: color var(--tn);
+}
+
+.pg-hud-netadd:hover {
+  color: var(--primary);
+}
+
+.pg-hud-netadd:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+.pg-hud-netbox {
+  border: 1px solid var(--border-2);
+  background: var(--bg);
+}
+
+.pg-hud-nrow {
+  display: grid;
+  grid-template-columns: 15px 1fr 116px auto;
+  gap: 10px;
+  align-items: center;
+  height: 31px;
+  padding: 0 12px;
+  border-top: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+  cursor: pointer;
+  transition: background var(--tn);
+}
+
+.pg-hud-nrow:first-child {
+  border-top: 0;
+}
+
+.pg-hud-nrow:hover {
+  background: color-mix(in srgb, var(--text-muted) 6%, transparent);
+}
+
+.pg-hud-nrow[data-on="true"] {
+  background: color-mix(in srgb, var(--primary) 7%, transparent);
+}
+
+.pg-hud-nrow[data-disabled="true"] {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.pg-hud-nrow:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: -2px;
+}
+
+.pg-hud-nrow__ck {
+  width: 13px;
+  height: 13px;
+  border: 1px solid var(--border-2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--text-3xs);
+  color: var(--primary-fg);
+}
+
+.pg-hud-nrow[data-on="true"] .pg-hud-nrow__ck {
+  background: var(--primary);
+  border-color: var(--primary);
+}
+
+.pg-hud-nrow__n {
+  min-width: 0;
+  font-weight: 700;
+  font-size: var(--text-sm);
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pg-hud-nrow__cidr {
+  font-size: var(--text-3xs);
+  color: var(--text-sub);
+}
+
+.pg-hud-nrow__m {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.pg-hud-nrow__state {
+  min-width: 5ch;
+  text-align: right;
+  font-size: var(--text-3xs);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.pg-hud-badge {
+  font-size: var(--text-3xs);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 1px 5px;
+  border: 1px solid;
+}
+
+.pg-hud-badge--isolated {
+  color: var(--primary);
+  border-color: var(--primary);
+}
+
+.pg-hud-badge--shared {
+  color: var(--c-info);
+  border-color: var(--c-info-bd);
+}
+
+.pg-hud-badge--draft {
+  color: var(--c-warning);
+  border-color: var(--c-warning-bd);
+}
+
+/* VM resources — vcpu / memory / disk all sliders */
+.pg-hud-vm {
+  max-width: 560px;
+}
+
+.pg-hud-vmcol {
+  border: 1px solid var(--border-2);
+  background: var(--bg);
+  padding: 12px 14px;
+  --vm-c: var(--primary);
+}
+
+.pg-hud-vmcol__h {
+  display: flex;
+  gap: 7px;
+  margin-bottom: 11px;
+  font-size: var(--text-3xs);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--vm-c);
+}
+
+.pg-hud-vmcol__sub {
+  margin-left: auto;
+  color: var(--text-muted);
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.pg-hud-sl {
+  padding: 8px 0;
+  border-top: 1px solid color-mix(in srgb, var(--border-2) 65%, transparent);
+}
+
+.pg-hud-sl:first-of-type {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.pg-hud-sl:last-of-type {
+  padding-bottom: 0;
+}
+
+.pg-hud-sl__h {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 7px;
+}
+
+.pg-hud-sl__n {
+  font-size: var(--text-3xs);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+/* Fixed-width bordered box holding the number + unit, mirroring the New Job
+   wizard's exact-value control so the manual input lines up across both. */
+.pg-hud-sl__e {
+  display: inline-flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 6px;
+  width: 7.5rem;
+  min-height: 30px;
+  padding: 0 8px;
+  border: 1px solid var(--border-2);
+  border-radius: 2px;
+  background: var(--surface);
+  box-sizing: border-box;
+  font-size: var(--text-3xs);
+  color: var(--text-muted);
+}
+
+.pg-hud-sl__e:focus-within {
+  border-color: var(--vm-c);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--vm-c) 18%, transparent);
+}
+
+/* Fixed-width unit keeps the number boxes aligned across rows regardless of
+   unit length ("cores" vs "GB"). */
+.pg-hud-sl__e > span {
+  flex: 0 0 3.5rem;
+  width: 3.5rem;
+  text-align: left;
+}
+
+/* Descendant selector beats the global input[type="text"]{width:100%} rule so
+   the input fills the box instead of stretching it. */
+.pg-hud-sl__e .pg-hud-sl__i {
+  flex: 1 1 auto;
+  width: auto;
+  min-width: 0;
+  text-align: right;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+}
+
+.pg-hud-sl__i:focus {
+  outline: none;
+}
+
+.pg-hud-sl__r {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 15px;
+  background: transparent;
+  cursor: pointer;
+  margin: 0;
+}
+
+.pg-hud-sl__r::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 999px;
+  background: linear-gradient(
+    to right,
+    var(--vm-c) 0%,
+    var(--vm-c) var(--fill, 0%),
+    var(--surface-3) var(--fill, 0%),
+    var(--surface-3) 100%
+  );
+}
+
+.pg-hud-sl__r::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: var(--text);
+  margin-top: -4.5px;
+  box-shadow:
+    0 0 0 2px var(--surface),
+    0 0 0 4px color-mix(in srgb, var(--vm-c) 18%, transparent);
+}
+
+.pg-hud-sl__r::-moz-range-track {
+  height: 4px;
+  border-radius: 999px;
+  background: var(--surface-3);
+}
+
+.pg-hud-sl__r::-moz-range-progress {
+  height: 4px;
+  border-radius: 999px;
+  background: var(--vm-c);
+}
+
+.pg-hud-sl__r::-moz-range-thumb {
+  width: 13px;
+  height: 13px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--text);
+}
+
+.pg-hud-sl__r:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 4px;
+}
+
+/* review — launch sequence */
+.pg-hud-seqbox {
+  border: 1px solid var(--border-2);
+  background: var(--bg);
+  max-width: 600px;
+}
+
+.pg-hud-seqbox__h {
+  display: flex;
+  justify-content: space-between;
+  padding: 11px 16px;
+  border-bottom: 1px solid var(--border);
+  font-size: var(--text-2xs);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--primary);
+}
+
+.pg-hud-seqbox__h span:last-child {
+  color: var(--text-muted);
+}
+
+.pg-hud-seqbody {
+  padding: 12px 16px 14px;
+}
+
+.pg-hud-seqrow {
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+  padding: 5px 0;
+  font-size: var(--text-sm);
+}
+
+.pg-hud-seqrow__ok {
+  color: var(--primary);
+}
+
+.pg-hud-seqrow__k {
+  flex: 0 0 92px;
+  font-size: var(--text-2xs);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.pg-hud-seqrow__v {
+  min-width: 0;
+  color: var(--text);
+  word-break: break-word;
+}
+
+.pg-hud-seq-auth {
+  padding: 10px 16px;
+  border-top: 1px solid var(--border);
+  font-size: var(--text-xs);
+  color: var(--primary);
+}
+
+/* live manifest column */
+.pg-hud-manifest {
+  border-left: 1px solid var(--border);
+  padding: 18px 16px;
+  overflow: auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
+}
+
+.pg-hud-mani__h {
+  font-size: var(--text-2xs);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.pg-hud-mani__h::before {
+  content: "› ";
+  color: var(--primary);
+}
+
+.pg-hud-mani__row {
+  display: flex;
+  gap: 9px;
+  align-items: baseline;
+  padding: 7px 0;
+  border-top: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+}
+
+.pg-hud-mani__row:first-child {
+  border-top: 0;
+}
+
+.pg-hud-mani__tick {
+  flex: 0 0 10px;
+  color: var(--border-2);
+  font-size: var(--text-sm);
+  line-height: 1.2;
+}
+
+.pg-hud-mani__row[data-set="true"] .pg-hud-mani__tick {
+  color: var(--primary);
+}
+
+.pg-hud-mani__kv {
+  min-width: 0;
+  flex: 1;
+}
+
+.pg-hud-mani__k {
+  font-size: var(--text-3xs);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.pg-hud-mani__v {
+  font-size: var(--text-sm);
+  color: var(--text);
+  word-break: break-word;
+  margin-top: 2px;
+}
+
+.pg-hud-mani__row[data-set="false"] .pg-hud-mani__v {
+  color: var(--text-muted);
+}
+
+.pg-hud-mani__ready {
+  margin-top: auto;
+  padding: 10px 12px;
+  border: 1px solid var(--border-2);
+  background: var(--bg);
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+}
+
+.pg-hud-mani__ready::before {
+  content: "» ";
+}
+
+.pg-hud-mani__ready[data-go="true"] {
+  border-color: var(--primary);
+  color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 7%, transparent);
+}
+
+/* one-time boot reveal (gated by .pg-hud-boot / .pg-hud-rail--boot) */
+.pg-v2-creator--hud.pg-hud-boot {
+  animation: pgHudBootScale 480ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+.pg-v2-creator--hud.pg-hud-boot .pg-hud-tbar,
+.pg-v2-creator--hud.pg-hud-boot .pg-hud-dhead,
+.pg-v2-creator--hud.pg-hud-boot .pg-v2-modal-footer {
+  animation: pgHudBootRise 420ms ease both;
+}
+
+.pg-hud-rail--boot .pg-hud-tick {
+  animation: pgHudBootRise 380ms ease both;
+}
+
+.pg-hud-rail--boot .pg-hud-tick:nth-child(1) {
+  animation-delay: 120ms;
+}
+
+.pg-hud-rail--boot .pg-hud-tick:nth-child(2) {
+  animation-delay: 165ms;
+}
+
+.pg-hud-rail--boot .pg-hud-tick:nth-child(3) {
+  animation-delay: 210ms;
+}
+
+.pg-hud-rail--boot .pg-hud-tick:nth-child(4) {
+  animation-delay: 255ms;
+}
+
+@keyframes pgHudBootScale {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.985);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes pgHudBootRise {
+  from {
+    opacity: 0;
+    transform: translateY(7px);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (max-width: 720px) {
+  .pg-hud-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .pg-hud-rail {
+    border-right: 0;
+    border-bottom: 1px solid var(--border);
+    flex-direction: row;
+    gap: 14px;
+    overflow-x: auto;
+    padding: 14px;
+  }
+
+  .pg-hud-tick + .pg-hud-tick::before {
+    display: none;
+  }
+
+  .pg-v2-creator--hud .pg-hud-wlgrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .pg-hud-manifest {
+    border-left: 0;
+    border-top: 1px solid var(--border);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pg-v2-creator--hud *,
+  .pg-v2-creator--hud *::before,
+  .pg-v2-creator--hud *::after {
+    animation: none !important;
+  }
+}
+
+/* ── Detail panel action bar ────────────────────────────────────────────── */
+/* Capture and power sit directly under the machine name — they are why the
+   panel is open, and they used to sit below the fold under the inventory. */
+.pg-v2-actionbar {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  display: grid;
+  gap: 8px;
+}
+
+.pg-v2-actionbar-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.pg-v2-actionbar-row .wiz-btn {
+  padding: 4px 9px;
+  font-size: var(--text-xs);
+}
+
+/* The backend already explains why an action is unavailable; show it instead of
+   leaving a row of greyed buttons with the reason hidden in a tooltip. */
+.pg-v2-actionbar-note {
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  line-height: 1.4;
+  color: var(--text-muted);
+}
+
+/* ── Inventory disclosure ───────────────────────────────────────────────── */
+.pg-v2-disclosure {
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  background: var(--bg);
+}
+
+.pg-v2-disclosure-summary {
+  cursor: pointer;
+  padding: 8px 12px;
+  font-size: var(--text-2xs);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  list-style: none;
+}
+
+.pg-v2-disclosure-summary::-webkit-details-marker {
+  display: none;
+}
+
+.pg-v2-disclosure-summary::after {
+  content: " ▾";
+  color: var(--text-sub);
+}
+
+.pg-v2-disclosure[open] .pg-v2-disclosure-summary::after {
+  content: " ▴";
+}
+
+.pg-v2-disclosure-summary:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: -2px;
+}
+
+.pg-v2-disclosure-body {
+  display: grid;
+  gap: 10px;
+  padding: 0 10px 10px;
+}
+
+.pg-ssh-copy-btn {
+  background: transparent;
+  border: 0;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 2px 4px;
+  font-size: var(--text-base);
+}
+
+.pg-ssh-copy-btn[data-ok="true"] {
+  color: var(--c-success);
+}
+
+.pg-ssh-copy-btn[data-ok="false"] {
+  color: var(--c-danger);
+}
+
+.pg-capture-close {
+  background: transparent;
+  border: 0;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: var(--text-md);
+  padding: 2px 6px;
+  line-height: 1;
+}
+
+.pg-capture-close:hover {
+  color: var(--text);
+}
+
+.pg-v2-map-node[data-dragging="true"] {
+  cursor: grabbing;
+  z-index: 3;
+  box-shadow:
+    0 0 0 1px var(--node-c),
+    0 12px 30px rgba(0, 0, 0, 0.35);
+}
+
+/* ── Footer status bar (Option A — refined) ─────────────────────────────── */
+.pg-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-top: 1px solid var(--border-2);
+  background: var(--surface-2);
+  padding: 8px 16px;
+  font-family: var(--font-body);
+  color: var(--text-sub);
+}
+
+.pg-foot-grp {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.pg-foot-actions {
+  gap: 2px;
+}
+
+.pg-foot-meta {
+  font: 500 11px/1 var(--font-mono);
+  color: var(--text-muted);
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.pg-foot-meta b {
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+@media (max-width: 600px) {
+  .pg-footer {
+    align-items: stretch;
+  }
+
+  .pg-foot-grp {
+    width: 100%;
+  }
+
+  .pg-foot-actions {
+    gap: 6px;
+  }
+
+  .pg-foot-actions .pg-foot-btn {
+    max-width: 100%;
+    min-height: 36px;
+    height: auto;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    text-align: left;
+  }
+}
+
+.pg-foot-dot {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: var(--text-muted);
+  opacity: 0.45;
+  flex-shrink: 0;
+}
+
+.pg-foot-dot--gap {
+  margin: 0 6px;
+}
+
+.pg-foot-live {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--c-success);
+  box-shadow: 0 0 0 2px rgba(62, 207, 122, 0.15);
+  flex-shrink: 0;
+  animation: pg-foot-pulse 1.8s ease-in-out infinite;
+}
+
+@keyframes pg-foot-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 2px rgba(62, 207, 122, 0.15);
+  }
+
+  50% {
+    box-shadow: 0 0 0 4px rgba(62, 207, 122, 0.05);
+  }
+}
+
+.pg-footer[data-active="false"] .pg-foot-live {
+  background: var(--text-muted);
+  box-shadow: none;
+  animation: none;
+  opacity: 0.5;
+}
+
+/* A session whose poll is failing must stop presenting itself as live: the
+   green pulse says "we are talking to the backend", and while it is stale we
+   are not. The lab itself stays rendered -- clearing it would read as data
+   loss -- so this is the only signal that the view is frozen. */
+#playground-root[data-stale="true"] .pg-foot-live {
+  background: var(--c-warning);
+  box-shadow: none;
+  animation: none;
+}
+
+#playground-root[data-stale="true"] .pg-statusline,
+#playground-root[data-stale="true"] .pg-foot-meta {
+  opacity: 0.55;
+}
+
+.pg-foot-btn {
+  background: transparent;
+  border: 0;
+  color: var(--text-muted);
+  font: 500 11px/1 var(--font-body);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  padding: 5px 8px;
+  border-radius: 2px;
+  transition:
+    background 0.12s,
+    color 0.12s;
+}
+
+.pg-foot-btn[hidden] {
+  display: none !important;
+}
+
+.pg-foot-btn:hover {
+  background: var(--surface-3);
+  color: var(--text);
+}
+
+.pg-foot-btn:focus-visible {
+  outline: 1px solid var(--primary);
+  outline-offset: 1px;
+}
+
+.pg-foot-btn--danger {
+  color: var(--c-danger-text);
+}
+
+.pg-foot-btn--danger:hover {
+  background: rgba(224, 71, 87, 0.08);
+  color: var(--c-danger-text);
+}
+
+.pg-foot-ico {
+  width: 12px;
+  height: 12px;
+  display: block;
+}

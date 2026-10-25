@@ -1,0 +1,74 @@
+{# ── Delete Confirmation Modal ── #}
+<div id="delete-job-modal-overlay" class="modal-overlay" aria-hidden="true">
+  <div
+    class="modal-dialog"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="delete-job-modal-title"
+    aria-describedby="delete-job-modal-description"
+    tabindex="-1"
+    style="max-width: 400px; margin-top: 15vh"
+  >
+    <div class="modal-header">
+      <span class="modal-header__title" id="delete-job-modal-title"
+        >{{ t.confirm_delete_job }}</span
+      >
+      <button
+        type="button"
+        class="modal-header__close"
+        data-action="close-delete-job-modal"
+        aria-label="{{ t.btn_cancel or 'Close delete dialog' }}"
+      >
+        &times;
+      </button>
+    </div>
+    <div class="modal-body" style="padding: 1.5rem">
+      <p
+        id="delete-job-modal-description"
+        style="
+          margin-bottom: 1.5rem;
+          font-size: var(--text-base);
+          color: var(--text-muted);
+          font-family: var(--font-body);
+        "
+      >
+        {{ t.confirm_delete_job }}
+      </p>
+
+      <label
+        class="wiz-checkbox-container"
+        style="display: flex; align-items: center; gap: 8px; cursor: pointer"
+      >
+        <input
+          type="checkbox"
+          id="delete-files-checkbox"
+          style="width: 14px; height: 14px; accent-color: var(--primary)"
+        />
+        <span style="font-size: var(--text-base); font-family: var(--font-body)"
+          >{{ t.label_delete_files }}</span
+        >
+      </label>
+    </div>
+    <div
+      class="modal-footer modal-footer--end"
+      style="
+        padding: 1rem 1.5rem;
+        background: var(--surface-2);
+        border-top: 1px solid var(--border);
+      "
+    >
+      <button type="button" class="wiz-btn wiz-btn--ghost" data-action="close-delete-job-modal">
+        {{ t.btn_cancel or "Cancel" }}
+      </button>
+      <button type="button" class="wiz-btn wiz-btn--danger" id="confirm-delete-btn">
+        {{ t.btn_delete_selected or "Delete" }}
+      </button>
+    </div>
+  </div>
+</div>
+
+{# No inline <script> here: this partial ships inside the #jobs-table fragment,
+   which htmx re-swaps every 5s. An inline script would carry the fragment
+   response's CSP nonce, never the host page's, so the browser blocks it and the
+   swapped-in buttons stay dead. The behavior lives in
+   static/delete-job-modal.js, delegated on document. #}

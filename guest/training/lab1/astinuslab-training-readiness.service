@@ -1,0 +1,15 @@
+[Unit]
+Description=Publish measured readiness for the AstinusLab Lab 1 guest
+After=network-online.target apache2.service mariadb.service astinuslab-training-dvwa-setup.service astinuslab-training-observation-clear.service
+Wants=network-online.target astinuslab-training-dvwa-setup.service
+Requires=astinuslab-training-observation-clear.service
+BindsTo=apache2.service mariadb.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/astinuslab-training-readiness
+ExecStop=/usr/bin/rm -f /var/lib/astinuslab/observations/readiness.json
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

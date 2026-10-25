@@ -1,0 +1,163 @@
+version: 1
+
+targets:
+  - id: ubuntu-22-04-default
+    enabled: true
+    distro:
+      slug: ubuntu
+      version: "22.04"
+      family: debian
+    image:
+      source_type: qcow2
+      image_ref: ubuntu-22.04-server-cloudimg-amd64-disk-kvm.img
+      cloud_init: true
+      default_username: ubuntu
+      # Optional compatibility override. Set when the image needs a specific
+      # cloud-init template family or when auto-detection is wrong.
+      # cloud_init_profile: ubuntu
+      # Optional compatibility override. Set to false for images that already
+      # bring a working network config and lose DHCP when netplan/network-config
+      # is injected via cloud-localds (common on older/vendor-tuned images).
+      # inject_network_config: true
+    virtualization:
+      hypervisor: libvirt
+      template_name: ubuntu-22-04-base
+      vcpu: 2
+      memory_mb: 4096
+      disk_gb: 40
+      network_profile: default
+    guest_access:
+      method: ssh
+      auth: ssh_key
+      serial_console: true
+      guest_agent: optional
+    kernel_policy:
+      supported_kernels: distribution_only
+      detect_from_guest: true
+    lifecycle:
+      destroy_vm_after_job: true
+      keep_failed_vm: false
+  - id: ubuntu-24.04
+    enabled: true
+    distro:
+      slug: ubuntu
+      version: "24.04"
+      family: debian
+    image:
+      source_type: img
+      image_ref: noble-server-cloudimg-amd64.img
+      cloud_init: true
+      default_username: ubuntu
+    virtualization:
+      hypervisor: libvirt
+      template_name: ubuntu-24-04-base
+      os_variant: ubuntu24.04
+      vcpu: 2
+      memory_mb: 4096
+      disk_gb: 40
+      network_profile: default
+    guest_access:
+      method: ssh
+      auth: ssh_key
+      serial_console: true
+      guest_agent: optional
+    kernel_policy:
+      supported_kernels: distribution_only
+      detect_from_guest: true
+    lifecycle:
+      destroy_vm_after_job: true
+      keep_failed_vm: false
+
+  # Ubuntu 20.04 left standard support in May 2025; kept as a dated lab target.
+  - id: ubuntu-20-04-legacy
+    enabled: false
+    distro:
+      slug: ubuntu
+      version: "20.04"
+      family: debian
+    image:
+      source_type: img
+      image_ref: ubuntu-20.04-server-cloudimg-amd64-disk-kvm.img
+      cloud_init: true
+      default_username: ubuntu
+      cloud_init_profile: ubuntu
+    virtualization:
+      hypervisor: libvirt
+      template_name: ubuntu-20-04-legacy
+      os_variant: ubuntu20.04
+      vcpu: 2
+      memory_mb: 4096
+      disk_gb: 40
+      network_profile: default
+    guest_access:
+      method: ssh
+      auth: ssh_key
+      serial_console: true
+      guest_agent: optional
+    lifecycle:
+      destroy_vm_after_job: true
+      keep_failed_vm: true
+
+  - id: debian-12
+    enabled: true
+    distro:
+      slug: debian
+      version: "12"
+      family: debian
+    image:
+      source_type: qcow2
+      image_ref: debian-12-genericcloud-amd64.qcow2
+      cloud_init: true
+      default_username: debian
+    virtualization:
+      hypervisor: libvirt
+      template_name: debian-12-base
+      os_variant: debian12
+      machine_type: pc
+      vcpu: 2
+      memory_mb: 4096
+      disk_gb: 40
+      network_profile: default
+    guest_access:
+      method: ssh
+      auth: ssh_key
+      serial_console: true
+      guest_agent: optional
+    kernel_policy:
+      supported_kernels: distribution_only
+      detect_from_guest: true
+    lifecycle:
+      destroy_vm_after_job: true
+      keep_failed_vm: true
+
+  # Fedora 40 reached end of life in May 2025; kept as a dated lab target.
+  - id: fedora-40
+    enabled: true
+    distro:
+      slug: fedora
+      version: "40"
+      family: redhat
+    image:
+      source_type: qcow2
+      image_ref: Fedora-Cloud-Base-Generic.x86_64-40-1.14.qcow2
+      cloud_init: true
+      default_username: fedora
+    virtualization:
+      hypervisor: libvirt
+      template_name: fedora-40-base
+      os_variant: fedora40
+      vcpu: 2
+      memory_mb: 4096
+      disk_gb: 40
+      network_profile: default
+    guest_access:
+      method: ssh
+      auth: ssh_key
+      serial_console: true
+      guest_agent: optional
+    kernel_policy:
+      supported_kernels: distribution_only
+      detect_from_guest: true
+    lifecycle:
+      destroy_vm_after_job: true
+      keep_failed_vm: false

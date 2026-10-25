@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block extrahead %}
+  {{ super() }}
+  {#- Point localized pages at their own search index. mkdocs-static-i18n builds one
+      combined index that Material fetches from the site root for every locale;
+      hooks/split_search_index_by_language.py writes a per-locale copy under
+      <locale>/search/. Non-default locales carry a "/<lang>/" path prefix (the
+      default language has none), so we redirect the index request for them. -#}
+  <script>
+    (function () {
+      var lang = document.documentElement.lang;
+      if (!lang || location.pathname.indexOf("/" + lang + "/") === -1) {
+        return;
+      }
+      var open = XMLHttpRequest.prototype.open;
+      XMLHttpRequest.prototype.open = function (method, url) {
+        if (typeof url === "string" && url.indexOf("/search/search_index.json") !== -1) {
+          arguments[1] = url.replace(
+            "/search/search_index.json",
+            "/" + lang + "/search/search_index.json"
+          );
+        }
+        return open.apply(this, arguments);
+      };
+    })();
+  </script>
+{% endblock %}

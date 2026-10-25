@@ -1,0 +1,315 @@
+/* ==========================================================================
+   AstinusLab — Design Tokens
+   Light/dark toggle. Terminal-inspired, forensic/academic.
+   ========================================================================== */
+/* ──────────────────────────────────────────────────────────────────────────
+   Self-hosted brand faces. Served from the app's own origin so the strict
+   `font-src 'self'` CSP in main.py allows them; no Google Fonts request.
+   Inter ships as one variable file covering every weight the UI uses
+   (400-800). JetBrains Mono has no upstream variable webfont, so the four
+   weights the UI actually uses are bundled as static faces. Italic is
+   synthesised by the browser: the UI uses it only for four incidental notes.
+   Provenance and licensing: THIRD_PARTY_NOTICES.md, LICENSES/README.md.
+   ────────────────────────────────────────────────────────────────────────── */
+@font-face {
+  font-family: "Inter";
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url("/static/fonts/InterVariable.woff2") format("woff2");
+}
+@font-face {
+  font-family: "JetBrains Mono";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/static/fonts/JetBrainsMono-Regular.woff2") format("woff2");
+}
+@font-face {
+  font-family: "JetBrains Mono";
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("/static/fonts/JetBrainsMono-SemiBold.woff2") format("woff2");
+}
+@font-face {
+  font-family: "JetBrains Mono";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("/static/fonts/JetBrainsMono-Bold.woff2") format("woff2");
+}
+@font-face {
+  font-family: "JetBrains Mono";
+  font-style: normal;
+  font-weight: 800;
+  font-display: swap;
+  src: url("/static/fonts/JetBrainsMono-ExtraBold.woff2") format("woff2");
+}
+
+:root {
+  /* ── Surfaces ── */
+  --bg: #0a0b0d;
+  --surface: #15181c;
+  --surface-2: #1c2027;
+  --surface-3: #242931;
+  --border: #2f353e;
+  --border-2: #3d444e;
+
+  /* ── Text ── */
+  --text: #e8eaed;
+  --text-muted: #8c93a0; /* AA: ≥4.5:1 on surface/surface-2/surface-3 */
+  --text-sub: #a0a7b1;
+
+  /* ── Brand accent — phosphor green ── */
+  --primary: #3ecf7a;
+  --primary-hover: #5fe094;
+  --primary-soft: #0c1f14;
+  --primary-fg: #04130a;
+  /* Inline-text/link accent — dark theme green already ≥4.5:1 as text */
+  --link: var(--primary);
+
+  /* ── Form-control resting border — AA non-text contrast (≥3:1 vs fill) ── */
+  --input-border: #656b75;
+
+  /* ── Semantic danger ── */
+  --danger: #e04757;
+  --danger-hover: #ec6978;
+
+  /* ── Signal (success / live) — same as primary ── */
+  --c-success: #3ecf7a;
+  --c-success-bg: #0c1f14;
+  --c-success-bd: #1b4d2b;
+
+  /* ── Amber (warning / capturing) ── */
+  --c-warning: #e8a341;
+  --c-warning-bg: #1f1607;
+  --c-warning-bd: #4a3510;
+
+  /* ── Crimson (danger / attacker) ── */
+  --c-danger: #e04757;
+  --c-danger-bg: #1f0a0c;
+  --c-danger-bd: #4a151a;
+
+  /* ── Cobalt (info / target) ── */
+  --c-info: #5aa1ff;
+  --c-info-bg: #0a1220;
+  --c-info-bd: #12325e;
+
+  /* Semantic text on tinted or raised surfaces; fills keep their signal hues. */
+  --c-danger-text: #f06a78;
+  --c-warning-text: var(--c-warning);
+  --c-info-text: var(--c-info);
+
+  /* ── Violet (analysis / annotations) ── */
+  --c-purple: #a78bfa;
+  --c-purple-bg: #140c1f;
+  --c-purple-bd: #321b52;
+
+  /* ── Cyan (network devices / embedded OS label) ── */
+  --c-cyan: #2bc4d4;
+  --c-cyan-bg: #07191c;
+  --c-cyan-bd: #12444c;
+
+  /* ── Green aliases (same as signal/success) ── */
+  --c-green: #3ecf7a;
+  --c-green-bg: #0c1f14;
+  --c-green-bd: #1b4d2b;
+
+  /* ── Orange aliases (same as amber) ── */
+  --c-orange: #e8a341;
+  --c-orange-bg: #1f1607;
+  --c-orange-bd: #4a3510;
+
+  /* ── Neutral ── */
+  --c-neutral: #8c93a0;
+  --c-neutral-bg: #15181c;
+  --c-neutral-bd: #2f353e;
+
+  /* ── Nav ── */
+  --nav-bg: #0f1113;
+  --nav-border: #2f353e;
+  --nav-text: #c8cdd4;
+  --nav-brand: #e8eaed;
+  --nav-link: #777f8b;
+  --nav-link-hover: #c8cdd4;
+  --nav-link-active: #e8eaed;
+
+  /* ── Terminal ── */
+  --c-terminal-bg: #0f1113;
+  --c-terminal-text: #c8cdd4;
+
+  /* ── Nav controls ── */
+  --nav-control-bg: rgba(255, 255, 255, 0.06);
+  --nav-control-border: rgba(255, 255, 255, 0.12);
+  --nav-control-text: #c8cdd4;
+  --nav-control-hover-bg: rgba(255, 255, 255, 0.1);
+  --nav-control-hover-border: rgba(255, 255, 255, 0.22);
+  --nav-control-option-bg: #1c2027;
+  --nav-control-option-text: #e8eaed;
+  --nav-control-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23777f8b' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+
+  /* ── Radii — square, forensic ── */
+  --radius-sm: 2px;
+  --radius-md: 3px;
+  --radius: 4px;
+  --radius-xl: 6px;
+  --radius-pill: 999px;
+
+  /* ── Spacing ── */
+  --sp-1: 0.25rem;
+  --sp-2: 0.5rem;
+  --sp-3: 0.75rem;
+  --sp-4: 1rem;
+  --sp-5: 1.25rem;
+  --sp-6: 1.5rem;
+
+  /* ── App layout ── */
+  --app-content-max: 1280px;
+
+  /* ── Typography ──
+     One ladder for the whole interface. Every rendered size comes from a step
+     here: page CSS must not restate a size in px or rem, so a step can be
+     retuned in one place. Off-ladder values are rounded to the nearest step
+     (halves up), which is why nothing sits at 8.5px, 10.5px or 11.5px any more.
+     The top three steps are for glyphs — close buttons, drop-zone marks —
+     rather than running text. */
+  --text-3xs: 0.5625rem; /* 9px — HUD tags, densest labels */
+  --text-2xs: 0.625rem; /* 10px */
+  --text-xs: 0.6875rem; /* 11px */
+  --text-sm: 0.75rem; /* 12px */
+  --text-base: 0.8125rem; /* 13px — dense lab default */
+  --text-md: 0.875rem; /* 14px */
+  --text-lg: 1rem; /* 16px */
+  --text-xl: 1.125rem; /* 18px — wizard/section headings */
+  --text-2xl: 1.25rem; /* 20px — glyph */
+  --text-3xl: 1.75rem; /* 28px — glyph */
+
+  /* ── Motion ── */
+  --transition-fast: 80ms;
+  --transition-normal: 140ms;
+  --transition-slow: 200ms;
+
+  /* ── Font families ── */
+  --font-body: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  /* Both brand faces are bundled as same-origin woff2 (see the @font-face block
+     above); the system stacks stay as the fallback while the faces load. */
+  --font-mono:
+    "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "DejaVu Sans Mono",
+    monospace;
+
+  /* ── Glow ring (primary box-shadow) ── */
+  --primary-glow: rgba(62, 207, 122, 0.12);
+
+  /* ── Overlays (theme-aware; replace literal rgba(255,255,255,…)) ── */
+  /* Modal scrim: one value for every overlay. Was rgba(10,11,13,0.72) in
+     components.css, rgba(10,11,13,0.66) in playground.css and an undefined
+     token falling back to rgba(0,0,0,0.5) in images.css. */
+  --overlay-backdrop: rgba(10, 11, 13, 0.72);
+  --overlay-blur: 12px;
+  --overlay-subtle: rgba(255, 255, 255, 0.06);
+  --overlay-medium: rgba(255, 255, 255, 0.1);
+  --overlay-strong: rgba(255, 255, 255, 0.16);
+
+  /* ── On-accent text (text sitting on a saturated brand/danger fill) ── */
+  --on-accent: #ffffff;
+
+  /* ── Z-index scale ── */
+  --z-base: 1;
+  --z-overlay: 1000;
+  --z-modal: 1100;
+  --z-toast: 1500;
+  --z-skiplink: 2000;
+}
+
+[data-theme="light"] {
+  --bg: #f8f9fa;
+  --surface: #ffffff;
+  --surface-2: #f0f2f5;
+  --surface-3: #e4e7eb;
+  --border: #dadddf;
+  --border-2: #c1c7cd;
+
+  --text: #111827;
+  --text-muted: #4b5563;
+  --text-sub: #6b7280;
+
+  --primary: #047857;
+  --primary-hover: #047857;
+  --primary-soft: #d1fae5;
+  --primary-fg: #ecfdf5;
+  /* AA: emerald-600 as inline text on light bg is ~3.8:1 — darken to emerald-700 */
+  --link: #047857;
+  --input-border: #868d96;
+
+  --c-success: #047857;
+  --c-success-bg: #d1fae5;
+  --c-success-bd: #a7f3d0;
+
+  --c-warning: #d97706;
+  --c-warning-bg: #fef3c7;
+  --c-warning-bd: #fde68a;
+
+  --c-danger: #dc2626;
+  --c-danger-bg: #fee2e2;
+  --c-danger-bd: #fca5a5;
+
+  --c-info: #2563eb;
+  --c-info-bg: #dbeafe;
+  --c-info-bd: #bfdbfe;
+
+  --c-danger-text: #b91c1c;
+  --c-warning-text: #92400e;
+  --c-info-text: #1d4ed8;
+
+  --c-purple: #7c3aed;
+  --c-purple-bg: #ede9fe;
+  --c-purple-bd: #ddd6fe;
+
+  --c-cyan: #0e7490;
+  --c-cyan-bg: #cffafe;
+  --c-cyan-bd: #a5f3fc;
+
+  --c-green: #047857;
+  --c-green-bg: #d1fae5;
+  --c-green-bd: #a7f3d0;
+
+  --c-orange: #d97706;
+  --c-orange-bg: #fef3c7;
+  --c-orange-bd: #fde68a;
+
+  --c-neutral: #4b5563;
+  --c-neutral-bg: #f3f4f6;
+  --c-neutral-bd: #e5e7eb;
+
+  --nav-bg: #ffffff;
+  --nav-border: #e5e7eb;
+  --nav-text: #374151;
+  --nav-brand: #111827;
+  --nav-link: #4b5563;
+  --nav-link-hover: #111827;
+  --nav-link-active: #111827;
+
+  --c-terminal-bg: #f8f9fa;
+  --c-terminal-text: #111827;
+
+  --nav-control-bg: rgba(0, 0, 0, 0.04);
+  --nav-control-border: rgba(0, 0, 0, 0.1);
+  --nav-control-text: #374151;
+  --nav-control-hover-bg: rgba(0, 0, 0, 0.08);
+  --nav-control-hover-border: rgba(0, 0, 0, 0.2);
+  --nav-control-option-bg: #ffffff;
+  --nav-control-option-text: #111827;
+  --nav-control-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23374151' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+
+  --primary-glow: rgba(5, 150, 105, 0.12);
+
+  /* ── Overlays (light theme: dark-on-light) ── */
+  /* The scrim stays dark in both themes: a light scrim over light content
+     does not read as a dismissible layer. */
+  --overlay-backdrop: rgba(17, 24, 39, 0.45);
+  --overlay-subtle: rgba(0, 0, 0, 0.04);
+  --overlay-medium: rgba(0, 0, 0, 0.07);
+  --overlay-strong: rgba(0, 0, 0, 0.12);
+  --on-accent: #ffffff; /* both themes: white on emerald/crimson fills passes AA */
+}

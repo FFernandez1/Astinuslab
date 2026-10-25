@@ -1,0 +1,15 @@
+{% set _path = request.url.path %}
+<div class="tab-strip">
+  <a href="/storage"
+     class="tab-link{% if _path.startswith('/storage') %} tab-link--active{% endif %}">
+    {{ t.nav_storage }}
+  </a>
+  <a href="/dumps"
+     class="tab-link{% if _path.startswith('/dumps') %} tab-link--active{% endif %}">
+    {{ t.nav_dumps }}
+  </a>
+  <a href="/workload-cache"
+     class="tab-link{% if _path.startswith('/workload-cache') %} tab-link--active{% endif %}">
+    {{ t.nav_workload_cache or "Workload Cache" }}
+  </a>
+</div>

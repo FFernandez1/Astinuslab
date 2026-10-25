@@ -1,0 +1,191 @@
+{% extends "base.html" %}
+{% block title %}Dump Vault — AstinusLab{% endblock %}
+
+{% block content %}
+<div class="wiz-shell">
+  <div class="wiz-body">
+    <main class="wiz-main">
+
+      <div class="page-head">
+        <div>
+          <h1 class="page-head__title">{{ t.dumps_title }}</h1>
+          <p class="page-head__sub">{{ t.page_desc_dumps or "Memory and disk acquisitions captured from jobs, ready for Volatility 3 analysis." }}</p>
+        </div>
+      </div>
+      {% include "partials/storage_tabs.html" %}
+
+      {% if message %}
+        <div class="banner-{{ message_type }} banner--compact mt-3" role="{{ 'status' if message_type == 'success' else 'alert' }}">{{ message }}</div>
+      {% endif %}
+
+      {% set vault = vault %}
+
+      {% if vault.total_files > 0 %}
+        <div class="vault-summary-card">
+          <div class="row row--wrap vault-summary-grid">
+            <div>
+              <div class="metric-label">{{ t.total_dumps }}</div>
+              <div class="metric-value">{{ vault.total_files }}</div>
+            </div>
+            <div>
+              <div class="metric-label">{{ t.total_size }}</div>
+              <div class="metric-value">{{ "%.2f"|format(vault.total_gb) }} GB</div>
+            </div>
+          </div>
+        </div>
+      {% endif %}
+
+      {% if vault.groups or vault.orphans %}
+
+        {% if vault.groups %}
+        <form action="/dumps/bulk-delete" method="post" id="bulk-form">
+          {% include "partials/csrf_input.html" %}
+          <div class="row row--end mb-3">
+            <button type="submit" class="wiz-btn wiz-btn--ghost button-danger-text"
+                    data-confirm="{{ t.confirm_delete_selected_dumps }}">
+              {{ t.btn_delete_selected }}
+            </button>
+          </div>
+
+          {% for g in vault.groups %}
+            <div class="vault-group-card">
+
+              <div class="row row--wrap vault-group-card__head">
+                <a href="/jobs/{{ g.job_id }}" class="mono font-semibold text-body link-plain">{{ g.job_id }}</a>
+                <span class="text-xs text-muted">{{ g.target_id }}</span>
+                <span class="wiz-badge wiz-badge--info">{{ g.status.replace('_',' ') }}</span>
+                {% if g.finished_at %}
+                  <span class="mono text-xs text-muted ml-auto">
+                    {{ g.finished_at.strftime('%Y-%m-%d %H:%M') }}
+                  </span>
+                {% endif %}
+              </div>
+
+              <div>
+                {% for artifact in [g.memory, g.disk] if artifact %}
+                  <div class="vault-artifact-row{% if not artifact.exists %} is-muted{% endif %}">
+
+                    <input type="checkbox" class="dump-select" name="items" value="{{ g.job_id }}:{{ artifact.kind }}"
+                           aria-label="{{ t.select_dump or 'Select' }} {{ artifact.filename }}">
+
+                    {% if artifact.kind == 'disk' %}
+                      <span class="wiz-badge wiz-badge--warning">{{ t.dump_type_disk }}</span>
+                      {% if artifact.live_acquisition %}
+                        <span class="wiz-badge wiz-badge--danger"
+                              title="{{ t.disk_live_copy_hint }}">{{ t.disk_live_copy_badge }}</span>
+                      {% endif %}
+                    {% else %}
+                      <span class="wiz-badge wiz-badge--info">{{ t.dump_type_memory }}</span>
+                    {% endif %}
+
+                    <span class="mono break-all grow">
+                      {{ artifact.filename }}
+                      {% if not artifact.exists %}
+                        <span class="text-danger text-2xs"> ✕ {{ t.dump_file_missing }}</span>
+                      {% endif %}
+                    </span>
+
+                    {% if artifact.size_bytes %}
+                      <span class="mono text-xs text-muted nowrap">
+                        {% if artifact.kind == 'disk' %}
+                          {{ "%.2f"|format(artifact.size_gb) }} GB
+                        {% else %}
+                          {{ "%.1f"|format(artifact.size_bytes / 1048576) }} MB
+                        {% endif %}
+                      </span>
+                    {% endif %}
+
+                    {% if artifact.checksum %}
+                      <span class="mono text-xs text-muted nowrap"
+                            title="{{ artifact.checksum }}">
+                        {{ artifact.checksum[:16] }}…
+                      </span>
+                    {% else %}
+                      <span class="text-muted text-2xs">{{ t.dump_no_checksum }}</span>
+                    {% endif %}
+
+                    {% if artifact.exists %}
+                      <a href="/dumps/{{ g.job_id }}/{{ artifact.kind }}/download"
+                         class="wiz-btn wiz-btn--secondary wiz-btn--xs"
+                         aria-label="{{ t.btn_download_dump or 'Download dump' }} {{ artifact.filename }}"
+                         download>⬇</a>
+                    {% endif %}
+
+                    <button
+                      type="submit"
+                      form="bulk-form"
+                      formaction="/dumps/delete"
+                      name="item"
+                      value="{{ g.job_id }}:{{ artifact.kind }}"
+                      class="wiz-btn wiz-btn--danger wiz-btn--xs"
+                      aria-label="{{ t.delete_dump or 'Delete dump' }} {{ artifact.filename }}"
+                      data-confirm="{{ t.confirm_delete_dump_prefix }}{{ artifact.filename }}{{ t.confirm_cannot_undo }}"
+                    >✕</button>
+
+                  </div>
+                {% endfor %}
+              </div>
+            </div>
+          {% endfor %}
+
+        </form>
+        {% endif %}
+
+        {% if vault.orphans %}
+          <form action="/dumps/orphans/delete" method="post" id="orphan-form">
+            {% include "partials/csrf_input.html" %}
+            <div class="wiz-vm-col wiz-vm-col--warning wiz-vm-col--stack mb-3">
+              <div class="wiz-vm-col__head">
+                <span class="dot"></span><span>{{ t.dump_orphan_title }}</span>
+              </div>
+              <p class="vault-note">{{ t.dump_orphan_hint }}</p>
+
+              <div class="vault-artifact-row vault-artifact-row--compact">
+                <input type="checkbox" data-toggle-all=".orphan-select" aria-label="{{ t.select_all }}">
+                <span class="text-xs text-muted">{{ t.select_all }}</span>
+                <button type="submit" class="wiz-btn wiz-btn--ghost ml-auto button-danger-text"
+                        data-confirm="{{ t.confirm_delete_selected_dumps }}">
+                  {{ t.btn_delete_selected }}
+                </button>
+              </div>
+
+              {% for o in vault.orphans %}
+                <div class="vault-artifact-row vault-artifact-row--compact">
+                  <input type="checkbox" class="orphan-select" name="dirnames" value="{{ o.dirname }}"
+                         aria-label="{{ t.select_dump or 'Select' }} {{ o.dirname }}">
+                  <span class="mono break-all grow">{{ o.dirname }}</span>
+                  <span class="mono text-xs text-muted nowrap" title="{{ o.file_count }}">{{ o.file_count }}×</span>
+                  <span class="mono text-xs text-muted nowrap">{{ "%.2f"|format(o.size_gb) }} GB</span>
+                  {% if o.modified %}
+                    <span class="mono text-xs text-muted nowrap">{{ o.modified.strftime('%Y-%m-%d %H:%M') }}</span>
+                  {% endif %}
+                  <button
+                    type="submit"
+                    name="dirnames"
+                    value="{{ o.dirname }}"
+                    form="orphan-row-{{ loop.index }}"
+                    class="wiz-btn wiz-btn--danger wiz-btn--xs"
+                    aria-label="{{ t.delete_dump or 'Delete dump' }} {{ o.dirname }}"
+                    data-confirm="{{ t.confirm_delete_dump_prefix }}{{ o.dirname }}{{ t.confirm_cannot_undo }}"
+                  >✕</button>
+                </div>
+              {% endfor %}
+            </div>
+          </form>
+          {% for o in vault.orphans %}
+          <form id="orphan-row-{{ loop.index }}" action="/dumps/orphans/delete" method="post">
+            {% include "partials/csrf_input.html" %}
+          </form>
+          {% endfor %}
+        {% endif %}
+
+      {% else %}
+        <div class="vault-empty-state">
+          {{ t.no_dumps }}
+        </div>
+      {% endif %}
+
+    </main>
+  </div>
+</div>
+{% endblock %}

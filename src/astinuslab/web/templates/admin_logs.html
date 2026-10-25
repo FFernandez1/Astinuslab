@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+{% block title %}{{ t.logs_title }} — AstinusLab{% endblock %}
+{% block body_class %} logs-page{% endblock %}
+{% block head %}<link rel="stylesheet" href="/static/css/pages/logs.css?v={{ asset_v }}">{% endblock %}
+{% block content %}
+<div class="wiz-shell">
+  <div class="wiz-body">
+    <main class="wiz-main">
+
+      <div class="page-head">
+        <div>
+          <h1 class="page-head__title">{{ t.nav_logs }}</h1>
+          <p class="page-head__sub">{{ t.page_desc_logs or "Live application and job logs for tracing lab activity and troubleshooting." }}</p>
+        </div>
+      </div>
+
+      <div class="tab-strip" aria-label="{{ t.label_file }}">
+        {% for item in logs %}
+          <a class="tab-link{% if item.name == selected_log %} tab-link--active{% endif %}"
+             href="/logs?log={{ item.name|urlencode }}&lines={{ line_count }}&level={{ selected_level }}&search={{ search|urlencode }}{% if q %}&q={{ q|urlencode }}{% endif %}"
+             {% if item.name == selected_log %}aria-current="page"{% endif %}>{{ item.name }}</a>
+        {% endfor %}
+      </div>
+
+      <section class="wiz-vm-col logs-panel" aria-label="{{ selected_log }} viewer">
+        <div class="wiz-vm-col__head">
+          <span class="dot"></span><span>{{ selected_log }}</span>
+          {% include "partials/log_metadata.html" %}
+        </div>
+
+        <form method="get" action="/logs" id="log-controls-form" class="logs-toolbar" aria-label="Log view controls">
+          <input type="hidden" name="log" value="{{ selected_log }}">
+          <div class="logs-toolbar__group logs-toolbar__levels">
+            <label for="level-select" class="log-ctrl-label">{{ t.logs_level_label }}</label>
+            <select id="level-select" name="level" class="log-ctrl-input logs-toolbar__select">
+              {% for lvl in [("all", t.logs_level_all), ("debug", "DEBUG"), ("info", "INFO"), ("warning", "WARNING"), ("error", "ERROR"), ("critical", "CRITICAL")] %}
+                <option value="{{ lvl[0] }}" {% if lvl[0] == selected_level %}selected{% endif %}>{{ lvl[1] }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="logs-toolbar__group logs-toolbar__lines">
+            <label for="lines-input" class="log-ctrl-label">{{ t.label_lines }}</label>
+            <input id="lines-input" type="number" name="lines" value="{{ line_count }}" min="50" max="{{ max_lines }}" data-limit-all="{{ line_limits.all }}" data-limit-filtered="{{ line_limits.filtered }}" class="log-ctrl-input">
+          </div>
+          <div class="logs-toolbar__group logs-toolbar__search">
+            <label for="log-search" class="log-ctrl-label">{{ t.logs_search_label }}</label>
+            <div class="logs-search-box">
+              <input id="log-search" name="search" value="{{ search }}" type="search" maxlength="200" autocomplete="off" placeholder="{{ t.logs_search_placeholder }}">
+              <button type="button" class="logs-search-clear" data-clear-log-search aria-label="{{ t.logs_clear_search }}" hidden>×</button>
+            </div>
+          </div>
+          <div class="logs-toolbar__buttons">
+            <button type="submit" class="wiz-btn wiz-btn--primary logs-toolbar__submit">{{ t.btn_update_view }}</button>
+          </div>
+          {% if q %}
+          <div class="logs-toolbar__group logs-toolbar__file-search">
+            <label for="log-file-search" class="log-ctrl-label">{{ t.logs_file_search }}</label>
+            <input id="log-file-search" name="q" value="{{ q }}" type="search" maxlength="200" class="log-ctrl-input">
+          </div>
+          {% endif %}
+          <details class="logs-view-options" open>
+            <summary>{{ t.logs_view_options }}</summary>
+          <div class="logs-toolbar__view">
+            <label class="logs-toggle">
+              <input type="checkbox" checked data-toggle-log-wrap>
+              <span>{{ t.logs_wrap }}</span>
+            </label>
+            <label class="logs-toggle"><input type="checkbox" data-hide-routine><span>{{ t.logs_hide_routine }}</span></label>
+            <span class="logs-toolbar__export">
+              <button type="button" class="logs-icon-btn" data-copy-log-view data-copied="{{ t.logs_copied }}">{{ t.logs_copy_visible }}</button>
+              <a href="/logs/{{ selected_log }}/download" class="logs-icon-btn">{{ t.logs_download_full }}</a>
+            </span>
+          </div>
+          </details>
+        </form>
+
+        <div class="logs-live-bar">
+            <button type="button" data-toggle-auto-refresh class="logs-tail-btn" aria-pressed="false">
+              <span class="logs-tail-btn__dot" aria-hidden="true"></span>
+              <span>{{ t.logs_autorefresh }}</span>
+              <span class="logs-viewer-state" id="log-tail-state">{{ t.logs_paused }}</span>
+            </button>
+            <span id="log-refresh-status" role="status" aria-live="polite"></span>
+            <button type="button" data-scroll-log-bottom class="logs-icon-btn">{{ t.logs_jump_bottom }}</button>
+        </div>
+
+        <div id="log-content"
+             hx-get="/logs/fragment?log={{ selected_log|urlencode }}&lines={{ line_count }}&level={{ selected_level }}&q={{ q|urlencode }}"
+             hx-target="#log-content"
+             hx-trigger="refreshLogs"
+             hx-swap="innerHTML">
+          {% include "partials/log_content.html" %}
+        </div>
+      </section>
+    </main>
+  </div>
+</div>
+<script src="/static/logs.js?v={{ asset_v }}" defer></script>
+{% endblock %}

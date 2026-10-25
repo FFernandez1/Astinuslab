@@ -1,0 +1,34 @@
+# Pinned Gitleaks 8.30.1 default rules with exact historical checksum exceptions.
+# Each exception requires the rule, path AND exact checksum line to match.
+# These historical reports also remain tracked on main.
+# Provenance: docs/development/GENERATED_RUNTIME_FILES.md.
+title = "AstinusLab secret scan"
+
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Historical source SHA-256 metadata; see GENERATED_RUNTIME_FILES.md"
+targetRules = ['''generic-api-key''']
+condition = "AND"
+paths = ['''^docs/remediation/evidence/merge\-to\-main/playground\-merge\-report\.json$''']
+regexTarget = "line"
+regexes = ['''^\s*"tests/python/playground/test_api\.py"\s*:\s*"4da79e4a9099698254ae5e828b8d545e97b8fce2f33ef13af3925588cd9e1112",?\s*$''']
+
+[[allowlists]]
+description = "Historical source SHA-256 metadata; see GENERATED_RUNTIME_FILES.md"
+targetRules = ['''generic-api-key''']
+condition = "AND"
+paths = ['''^docs/remediation/evidence/merge\-to\-main/source\-sha256\.json$''']
+regexTarget = "line"
+regexes = ['''^\s*"src/astinuslab/forensics/api\.py"\s*:\s*"ac33cfac8898eb7bb38246f4648565903c48a19c122f21365be8ad593088b785",?\s*$''', '''^\s*"src/astinuslab/lab_packages/api\.py"\s*:\s*"f6fe0b1e2e09271de06588d0af2a2a7e7b14f6aa68192f55259b393a5bf07c04",?\s*$''', '''^\s*"src/astinuslab/playground/api\.py"\s*:\s*"bcad93735d0b8900e3a9464cd2c01d6259210878e59fddfaea4b561fa9b6484b",?\s*$''', '''^\s*"src/astinuslab/storage/keystore\.py"\s*:\s*"0b98114a9c63652c9706d2e403a7345381e10654db3d83ecb1ea79140744b07a",?\s*$''', '''^\s*"src/astinuslab/ui/auth_routes\.py"\s*:\s*"1224f2a9231e3caf7dda9ec50284bf5d1b085a5d875802499014912d8ae204b4",?\s*$''', '''^\s*"src/astinuslab/web/static/css/tokens\.css"\s*:\s*"087aa6f3fdad27ce439468e86842ae1b95d906663b6c48962ac20f88d5deaa90",?\s*$''', '''^\s*"src/astinuslab/web/static/packages/api\.js"\s*:\s*"9fc83608a45a25a436703286fa5852111dcffd94e78e018b70dd3c4d63399e12",?\s*$''', '''^\s*"src/astinuslab/web/static/playground/api\.js"\s*:\s*"b3fc400b3c6165b62ff2056e2cf60f98a91f473eea5157c908f1558d1fdc35f0",?\s*$''', '''^\s*"src/astinuslab/web/static/volatility/api\.js"\s*:\s*"522357426ece9820fde2423f75a296b095a385ffe03a0e92b78d20b229b423bc",?\s*$''', '''^\s*"src/astinuslab/web/templates/admin_ssh_keys\.html"\s*:\s*"aa162e95a1a904ccd4906646b8d642abac45ce1ecad30d6f43de39df7e18a2ed",?\s*$''']
+
+# Reviewed CL26's literal "expiry/revocation" phrase is prose, not a credential.
+# Exact path AND rule AND matched phrase; other matches are still scanned.
+[[allowlists]]
+description = "Reviewed authentication prose, not a credential"
+targetRules = ['generic-api-key']
+condition = "AND"
+paths = ['^docs/plans/2026-10-03-documentation-frontend-review/claims-ledger\.md$']
+regexTarget = "match"
+regexes = ['^credentials, expiry/revocation $']

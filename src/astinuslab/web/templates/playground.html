@@ -1,0 +1,232 @@
+{% extends "base.html" %}
+{% block title %}Playground · AstinusLab{% endblock %}
+{% block head %}<link rel="stylesheet" href="/static/css/pages/playground.css?v={{ asset_v }}">{% endblock %}
+
+{% block content %}
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-download" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 4v12M6 12l6 6 6-6M4 20h16"/></symbol>
+    <symbol id="i-upload" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 20V8M6 14l6-6 6 6M4 4h16"/></symbol>
+    <symbol id="i-power" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 4v8"/><path d="M5.5 8a8 8 0 1013 0"/></symbol>
+  </defs>
+</svg>
+<div class="wiz-shell pg-shell">
+  <div class="wiz-body pg-body-block">
+    <section class="wiz-main" id="playground-root" data-state="idle" data-populated="false">
+
+      <div class="page-head">
+        <div>
+          <h1 class="page-head__title pg-header-label">Playground</h1>
+          <p class="page-head__sub">{{ t.page_desc_playground or "Build a lab visually — place targets, attackers, and network nodes, then launch." }}</p>
+        </div>
+        <div class="pg-v2-actions">
+          <button class="wiz-btn pg-btn-target" type="button" data-open-create="target">+ Target</button>
+          <button class="wiz-btn pg-btn-attacker" type="button" data-open-create="attacker">+ Attacker</button>
+          <button class="wiz-btn pg-btn-network" type="button" data-open-create="network">+ Network Node</button>
+        </div>
+      </div>
+      <p id="end-session-error" class="pg-form-error" aria-live="assertive" hidden></p>
+      <p id="pg-alerts" class="pg-form-error pg-alerts" role="status" aria-live="polite" hidden></p>
+
+      <section id="pg-top-metrics" class="pg-statusline" aria-label="Lab status"></section>
+
+      <div class="pg-v2-layout">
+        <div class="pg-v2-main-stack">
+          <section id="connection-map-section" class="pg-panel">
+            <div class="pg-panel__head">
+              <span class="pg-panel__title">{{ t.pg_panel_lab_map }}</span>
+              <div class="pg-v2-panel-tools">
+                <span id="map-save-status" class="pg-v2-map-status" data-state="idle" aria-live="polite">{{ t.pg_map_autosave }}</span>
+                <button class="wiz-btn wiz-btn--ghost pg-map-zoom-btn" type="button" id="btn-map-zoom-in" title="Zoom in" aria-label="Zoom map in">+</button>
+                <button class="wiz-btn wiz-btn--ghost pg-map-zoom-btn" type="button" id="btn-map-zoom-out" title="Zoom out" aria-label="Zoom map out">-</button>
+                <button class="wiz-btn wiz-btn--ghost pg-map-zoom-btn" type="button" id="btn-map-fit" title="Fit map" aria-label="Fit map to view">□</button>
+              </div>
+            </div>
+            <div id="map-context" class="pg-v2-map-context" aria-live="polite"></div>
+            <div id="map-canvas" class="pg-v2-map-canvas">
+              <div id="map-world" class="pg-v2-map-world">
+                <svg id="connection-map-svg" class="pg-v2-link-layer" aria-label="Playground connection map"></svg>
+              </div>
+              <span class="pg-empty-label" aria-hidden="true">interactive lab map</span>
+            </div>
+          </section>
+
+          <section id="capture-section" class="pg-panel" hidden>
+            <div class="pg-panel__head">
+              <span class="pg-panel__title">{{ t.pg_panel_capture_console }}</span>
+            </div>
+            <div class="pg-panel__body pg-v2-console-body">
+              <div class="pg-stream-head">
+                <span>STREAM · <span id="stream-kind">-</span></span>
+                <span id="stream-vm">-</span>
+              </div>
+              <pre id="stream-log" class="pg-stream-log" aria-live="polite">{{ t.pg_capture_idle }}</pre>
+            </div>
+          </section>
+        </div>
+
+        <aside id="pg-detail-panel" class="pg-v2-detail-panel" aria-label="Selected machine details"></aside>
+      </div>
+
+      <div class="pg-v2-modal-backdrop" id="create-vm-modal" data-modal-kind="create-vm" hidden>
+        <section class="pg-v2-creator pg-v2-creator--wizard pg-v2-creator--hud" role="dialog" aria-modal="true" aria-labelledby="create-vm-title">
+          <div class="pg-hud-tbar">
+            <span class="pg-hud-dots" aria-hidden="true"><i></i><i></i><i></i></span>
+            <span class="pg-hud-crumbs"><span class="pg-hud-crumb">astinuslab</span><span class="pg-hud-sep">/</span><span class="pg-hud-crumb">playground</span><span class="pg-hud-sep">/</span><span class="pg-hud-crumb pg-hud-crumb--cur" id="create-vm-crumb-role">target</span></span>
+            <span class="pg-hud-tstat"><span class="pg-hud-led" aria-hidden="true"></span>trusted-local</span>
+            <span class="wiz-page-head__counter pg-hud-counter" id="create-vm-step-counter" hidden></span>
+            <button class="pg-hud-x" type="button" id="create-vm-close" title="Close" aria-label="Close create VM dialog">×</button>
+          </div>
+          <div class="pg-hud-dhead">
+            <span class="pg-v2-modal-eyebrow" id="create-vm-eyebrow">{{ t.pg_eyebrow_new_vm }}</span>
+            <span class="pg-panel__title" id="create-vm-title">{{ t.pg_create_vm_title_target }}</span>
+            <span class="pg-hud-hint" id="create-vm-hint"></span>
+          </div>
+          <form id="create-vm-form" class="pg-v2-creator-body">
+            <input type="hidden" name="role" value="target">
+            <div id="create-fields" class="pg-v2-create-grid"></div>
+            <p id="create-vm-warning" class="pg-form-warning" hidden></p>
+            <p id="spawn-error" class="pg-form-error" aria-live="assertive" hidden></p>
+            <div class="pg-v2-modal-footer pg-v2-modal-footer--split" id="create-vm-modal-footer">
+              <button class="wiz-btn wiz-btn--ghost" type="button" id="create-vm-cancel">{{ t.pg_btn_cancel }}</button>
+              <div class="pg-v2-modal-footer-actions">
+                <button class="wiz-btn wiz-btn--secondary" type="button" id="create-vm-back">{{ t.pg_btn_back }}</button>
+                <button class="wiz-btn wiz-btn--primary" type="button" id="create-vm-next">{{ t.pg_btn_next }}</button>
+                <button class="wiz-btn wiz-btn--primary" type="button" id="create-vm-submit">{{ t.pg_create_vm_title_target }}</button>
+              </div>
+            </div>
+          </form>
+        </section>
+      </div>
+
+      <div class="pg-v2-modal-backdrop" id="create-network-modal" data-modal-kind="create-network" hidden>
+        <section class="pg-v2-creator pg-modal-narrow" role="dialog" aria-modal="true" aria-labelledby="create-network-title">
+          <div class="pg-panel__head pg-v2-modal-head">
+            <span class="pg-v2-title-stack">
+              <span class="pg-v2-modal-eyebrow" id="create-network-eyebrow">{{ t.pg_eyebrow_new_network }}</span>
+              <span class="pg-panel__title" id="create-network-title">{{ t.pg_create_network_title }}</span>
+            </span>
+            <div class="pg-v2-panel-tools" id="create-network-tools">
+              <button class="wiz-btn wiz-btn--ghost pg-v2-modal-close" type="button" id="create-network-close" title="Close" aria-label="Close create network dialog">×</button>
+            </div>
+          </div>
+          <form id="create-network-form" class="pg-v2-creator-body">
+            <div class="pg-v2-create-grid pg-create-grid--stack">
+              <div class="pg-v2-field-card">
+                <label class="field-label" for="create-network-name">{{ t.pg_label_name }}</label>
+                <input id="create-network-name" type="text" name="name" placeholder="net-01" class="pg-net-input">
+              </div>
+              <div class="pg-v2-field-card">
+                <label class="field-label" for="create-network-cidr">{{ t.pg_label_subnet_cidr }}</label>
+                <input id="create-network-cidr" type="text" name="subnet_cidr" placeholder="10.42.1.0/24" required class="pg-net-input">
+              </div>
+              <div class="pg-v2-field-card">
+                <div class="field-label">{{ t.pg_label_isolation }}</div>
+                <label class="pg-isolated-row">
+                  <input type="checkbox" name="isolated" checked> {{ t.pg_isolated_private }}
+                </label>
+              </div>
+            </div>
+            <p id="network-error" class="pg-form-error" aria-live="assertive" hidden></p>
+            <p id="network-notice" class="pg-form-notice" aria-live="polite" hidden></p>
+            <div class="pg-v2-modal-footer" id="create-network-modal-footer">
+              <button class="wiz-btn wiz-btn--ghost" type="button" id="create-network-cancel">{{ t.pg_btn_cancel }}</button>
+              <button class="wiz-btn wiz-btn--primary" type="button" id="create-network-submit">{{ t.pg_btn_create }}</button>
+            </div>
+          </form>
+        </section>
+      </div>
+
+      <div class="pg-v2-modal-backdrop" id="import-recipe-modal" data-modal-kind="import-recipe" hidden>
+        <section class="pg-v2-creator pg-modal-narrow" role="dialog" aria-modal="true" aria-labelledby="import-recipe-title">
+          <div class="pg-panel__head pg-v2-modal-head">
+            <span class="pg-v2-title-stack">
+              <span class="pg-v2-modal-eyebrow" id="import-recipe-eyebrow">{{ t.pg_eyebrow_recipe }}</span>
+              <span class="pg-panel__title" id="import-recipe-title">{{ t.pg_import_recipe_title }}</span>
+            </span>
+            <div class="pg-v2-panel-tools">
+              <button class="wiz-btn wiz-btn--ghost pg-v2-modal-close" type="button" id="import-recipe-close" title="Close" aria-label="Close import recipe dialog">×</button>
+            </div>
+          </div>
+          <form id="import-recipe-form" class="pg-v2-creator-body">
+            <p class="pg-form-notice pg-recipe-format-hint">{{ t.pg_recipe_format_hint }}</p>
+            <div class="pg-v2-create-grid pg-create-grid--stack">
+              <div class="pg-v2-field-card">
+                <label class="field-label" for="import-recipe-text">{{ t.pg_label_recipe_json }}</label>
+                <textarea id="import-recipe-text" class="pg-net-input" rows="10" placeholder='{"schema_version":1,"name":"demo","networks":[],"vms":[]}'></textarea>
+              </div>
+            </div>
+            <p id="import-recipe-error" class="pg-form-error" aria-live="assertive" hidden></p>
+            <div class="pg-v2-modal-footer" id="import-recipe-modal-footer">
+              <button class="wiz-btn wiz-btn--ghost" type="button" id="import-recipe-cancel">{{ t.pg_btn_cancel }}</button>
+              <button class="wiz-btn wiz-btn--primary" type="button" id="import-recipe-submit">{{ t.pg_btn_import }}</button>
+            </div>
+          </form>
+        </section>
+      </div>
+
+      {% if packages_enabled %}
+      <div class="pg-v2-modal-backdrop" id="export-package-modal" data-modal-kind="export-package" hidden>
+        <section class="pg-v2-creator pg-modal-narrow" role="dialog" aria-modal="true" aria-labelledby="export-package-title">
+          <div class="pg-panel__head pg-v2-modal-head">
+            <span class="pg-v2-title-stack">
+              <span class="pg-v2-modal-eyebrow">{{ t.pg_eyebrow_package }}</span>
+              <span class="pg-panel__title" id="export-package-title">{{ t.pg_export_package_title }}</span>
+            </span>
+            <div class="pg-v2-panel-tools"><button class="wiz-btn wiz-btn--ghost pg-v2-modal-close" type="button" id="export-package-close" title="{{ t.pg_export_package_close_title }}" aria-label="{{ t.pg_export_package_close_aria }}">×</button></div>
+          </div>
+          <form id="export-package-form" class="pg-v2-creator-body">
+            <p class="pg-form-notice">{{ t.pg_export_package_hint }}</p>
+            <fieldset class="pg-v2-field-card pg-package-reproducibility">
+              <legend class="field-label">{{ t.pg_export_reproducibility }}</legend>
+              <label><input type="radio" name="reproducibility" value="unlocked" checked> {{ t.pg_reproducibility_unlocked }}</label>
+              <label><input type="radio" name="reproducibility" value="locked"> {{ t.pg_reproducibility_locked }}</label>
+              <label class="field-label" for="export-package-verification">{{ t.pg_verification_id }}<input id="export-package-verification" name="verification_id" class="pg-net-input" autocomplete="off"></label>
+              <label><input type="checkbox" id="export-package-embed-assets" name="embed_assets" checked> {{ t.pg_embed_assets }}</label>
+              <label><input type="checkbox" id="export-package-redistribution" name="redistribution_confirmed"> {{ t.pg_redistribution_confirm }}</label>
+              <p class="pg-form-notice">{{ t.pg_locked_export_note }}</p>
+            </fieldset>
+            <div class="pg-v2-create-grid pg-create-grid--stack">
+              <div class="pg-v2-field-card"><label class="field-label" for="export-package-id">{{ t.pg_label_package_id }}</label><input id="export-package-id" name="package_id" class="pg-net-input" pattern="[A-Za-z0-9][A-Za-z0-9._\-]{2,127}" required></div>
+              <div class="pg-v2-field-card"><label class="field-label" for="export-package-version">{{ t.pg_label_version }}</label><input id="export-package-version" name="version" class="pg-net-input" value="1.0.0" pattern="[0-9]+\.[0-9]+\.[0-9]+(?:-[A-Za-z0-9.\-]+)?" required></div>
+              <div class="pg-v2-field-card"><label class="field-label" for="export-package-title-field">{{ t.pg_label_title }}</label><input id="export-package-title-field" name="title" class="pg-net-input" required></div>
+              <div class="pg-v2-field-card"><label class="field-label" for="export-package-creator">{{ t.pg_label_creator }}</label><input id="export-package-creator" name="creator" class="pg-net-input" required></div>
+              <div class="pg-v2-field-card"><label class="field-label" for="export-package-license">{{ t.pg_label_license }}</label><input id="export-package-license" name="license" class="pg-net-input" value="CC-BY-4.0" required></div>
+              <div class="pg-v2-field-card"><label class="field-label" for="export-package-description">{{ t.pg_label_description }}</label><input id="export-package-description" name="description" class="pg-net-input"></div>
+              <div class="pg-v2-field-card"><label class="field-label" for="export-package-runbook">{{ t.pg_label_runbook }}</label><textarea id="export-package-runbook" name="runbook" class="pg-net-input" rows="7" required>{{ t.pg_export_package_runbook_default }}</textarea></div>
+              <div class="pg-v2-field-card"><label class="field-label" for="export-package-objectives">{{ t.pg_experience_objectives }}</label><textarea id="export-package-objectives" name="objectives" class="pg-net-input" rows="2">[]</textarea><label class="field-label" for="export-package-hints">{{ t.pg_experience_hints }}</label><textarea id="export-package-hints" name="hints" class="pg-net-input" rows="2">[]</textarea><label class="field-label" for="export-package-checkpoints">{{ t.pg_experience_checkpoints }}</label><textarea id="export-package-checkpoints" name="checkpoints" class="pg-net-input" rows="3">[]</textarea><p class="pg-form-notice">{{ t.pg_signing_status }}</p></div>
+              <div class="pg-v2-field-card"><div class="field-label">{{ t.pg_label_host_resources }}</div><div class="pg-v2-create-grid pg-create-grid--stack"><label class="field-label" for="export-package-min-cpu">{{ t.pg_export_package_min_cpu }}<input id="export-package-min-cpu" name="minimum_cpu" type="number" min="1" value="2" required class="pg-net-input"></label><label class="field-label" for="export-package-min-memory">{{ t.pg_export_package_min_memory }}<input id="export-package-min-memory" name="minimum_memory" type="number" min="512" value="4096" required class="pg-net-input"></label><label class="field-label" for="export-package-min-disk">{{ t.pg_export_package_min_disk }}<input id="export-package-min-disk" name="minimum_disk" type="number" min="1" value="40" required class="pg-net-input"></label><label class="field-label" for="export-package-rec-cpu">{{ t.pg_export_package_recommended_cpu }}<input id="export-package-rec-cpu" name="recommended_cpu" type="number" min="1" value="4" required class="pg-net-input"></label><label class="field-label" for="export-package-rec-memory">{{ t.pg_export_package_recommended_memory }}<input id="export-package-rec-memory" name="recommended_memory" type="number" min="512" value="8192" required class="pg-net-input"></label><label class="field-label" for="export-package-rec-disk">{{ t.pg_export_package_recommended_disk }}<input id="export-package-rec-disk" name="recommended_disk" type="number" min="1" value="40" required class="pg-net-input"></label></div></div>
+            </div>
+            <p id="export-package-error" class="pg-form-error" aria-live="assertive" hidden></p>
+            <div class="pg-v2-modal-footer"><button class="wiz-btn wiz-btn--ghost" type="button" id="export-package-cancel">{{ t.pg_btn_cancel }}</button><button class="wiz-btn wiz-btn--primary" type="submit" id="export-package-submit">{{ t.pg_btn_export }}</button></div>
+          </form>
+        </section>
+      </div>
+      {% endif %}
+
+    </section>
+    <footer class="pg-footer" id="pg-footer" data-active="false" aria-label="Playground session status">
+      <div class="pg-foot-grp">
+        <span class="pg-foot-live" aria-hidden="true"></span>
+        <span class="pg-foot-meta"><b id="pg-foot-sid">{{ t.pg_foot_no_session }}</b></span>
+        <span class="pg-foot-dot" aria-hidden="true"></span>
+        <span class="pg-foot-meta" id="pg-foot-live-meta">{{ t.pg_foot_live }} · <span id="pg-foot-elapsed" data-elapsed="true">00:00:00</span></span>
+        <span class="pg-foot-dot" aria-hidden="true"></span>
+        <span class="pg-foot-meta" id="pg-foot-utc">—</span>
+      </div>
+      <p class="pg-cleanup-warning" id="pg-cleanup-warning" role="status" aria-live="polite" hidden></p>
+      <div class="pg-foot-grp pg-foot-actions">
+        {% if packages_enabled %}
+        <button class="pg-foot-btn" type="button" id="btn-export-package" hidden><svg class="pg-foot-ico" aria-hidden="true"><use href="#i-download"/></svg>{{ t.pg_foot_export_package }}</button>
+        {% endif %}
+        <button class="pg-foot-btn" type="button" id="btn-export-recipe" hidden><svg class="pg-foot-ico" aria-hidden="true"><use href="#i-download"/></svg>{{ t.pg_foot_export_recipe }}</button>
+        <button class="pg-foot-btn" type="button" id="btn-import-recipe"><svg class="pg-foot-ico" aria-hidden="true"><use href="#i-upload"/></svg>{{ t.pg_foot_import_recipe }}</button>
+        <span class="pg-foot-dot pg-foot-dot--gap" aria-hidden="true"></span>
+        <button class="pg-foot-btn pg-foot-btn--danger" type="button" id="btn-end-session" hidden><svg class="pg-foot-ico" aria-hidden="true"><use href="#i-power"/></svg>{{ t.pg_foot_end_session }}</button>
+      </div>
+    </footer>
+  </div>
+</div>
+
+<script type="module" src="/static/playground/index.js?v={{ asset_v }}"></script>
+{% endblock %}

@@ -1,0 +1,2 @@
+<span id="log-file-metadata" class="wiz-vm-col__sub"{% if refresh_metadata %} hx-swap-oob="true"{% endif %}>{{ log_metadata.name }} · {{ "%.1f"|format(log_metadata.size_kb) }} KB · {% if log_metadata.modified %}{{ log_metadata.modified.strftime('%Y-%m-%d %H:%M:%S UTC') }}{% else %}—{% endif %}</span>
+{% if log_metadata.layout_error %}<span role="alert">{{ log_metadata.layout_error }}</span>{% endif %}

@@ -1,0 +1,17 @@
+{
+  "arch": null,
+  "cloud_init_profile": "debian",
+  "default_username": "debian",
+  "detected_at": "2026-05-12T16:21:53+00:00",
+  "distro": "debian",
+  "family": "debian",
+  "inject_network_config": null,
+  "inspect_error": null,
+  "kernel_release": null,
+  "machine_type": "pc",
+  "os_variant": "debian12",
+  "schema_version": 1,
+  "source": "filename",
+  "user_edited_fields": [],
+  "version": "12"
+}

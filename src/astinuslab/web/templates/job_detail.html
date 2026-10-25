@@ -1,0 +1,190 @@
+{% extends "base.html" %}
+{% block title %}Job {{ job.id[:8] }} — AstinusLab{% endblock %}
+{% block head %}<script src="/static/delete-job-modal.js?v={{ asset_v }}" defer></script><script src="/static/job-live.js?v={{ asset_v }}" defer></script><link rel="stylesheet" href="/static/css/pages/jobs.css?v={{ asset_v }}">{% endblock %}
+
+{% block content %}
+<div class="wiz-shell">
+  <div class="wiz-body">
+    <main class="wiz-main">
+
+      <a href="/jobs" class="wiz-btn wiz-btn--ghost job-detail__back">← {{ t.back_jobs }}</a>
+
+      {% if message %}
+      <div class="banner-{{ message_type }} vol-banner" role="{{ 'status' if message_type == 'success' else 'alert' }}">{{ message }}</div>
+      {% endif %}
+
+      <div class="row row--between row--wrap job-detail__head">
+        <div class="row row--wrap job-detail__id-row">
+          <h1 class="wiz-label job-detail__id">{{ job.id }}</h1>
+          <span class="wiz-badge wiz-badge--info" data-live-job-status>{% include "partials/job_status_label.html" %}</span>
+          {% if job.capture_type and job.capture_type != 'memory' %}
+            <span class="wiz-badge wiz-badge--warning">{{ job.capture_type }}</span>
+          {% endif %}
+        </div>
+        <div class="row job-detail__actions">
+          {% if job.status in ('completed', 'failed', 'cancelled') %}
+            <button type="button" class="wiz-btn wiz-btn--danger" data-delete-job-id="{{ job.id }}" data-delete-redirect="true">
+              ✕ {{ t.btn_delete_selected or "Delete" }}
+            </button>
+          {% endif %}
+          {% if job.finished_at and job.started_at %}
+            <span class="mono text-xs text-muted">
+              {{ "%.0f"|format((job.finished_at - job.started_at).total_seconds()) }}s
+            </span>
+          {% endif %}
+        </div>
+      </div>
+
+      {% include "partials/delete_job_modal.html" %}
+
+      <div class="job-summary-grid">
+        <div class="wiz-vm-col wiz-vm-col--info wiz-vm-col--stack">
+          <div class="wiz-vm-col__head">
+            <span class="dot"></span><span>{{ t.job_details }}</span>
+          </div>
+          <dl class="meta">
+            <dt>{{ t.col_target }}</dt>
+            <dd>{{ target.display_name if target else job.target_id }}</dd>
+
+            <dt>{{ t.col_scenario }}</dt>
+            <dd>{{ job.scenario_id }}</dd>
+
+            <dt>{{ t.label_mode }}</dt>
+            <dd>{% if job.execution_mode == 'immediate' %}{{ t.mode_immediate }}{% elif job.execution_mode == 'post_script' %}{{ t.mode_post_script }}{% elif job.execution_mode == 'manual_trigger' %}{{ t.mode_manual_trigger }}{% else %}{{ job.execution_mode }}{% endif %}</dd>
+
+            <dt>{{ t.col_created }}</dt>
+            <dd>{{ job.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</dd>
+
+            {% if job.started_at %}
+              <dt>{{ t.label_started }}</dt>
+              <dd>{{ job.started_at.strftime('%Y-%m-%d %H:%M:%S') }}</dd>
+            {% endif %}
+
+            {% if job.finished_at %}
+              <dt>{{ t.label_finished }}</dt>
+              <dd>{{ job.finished_at.strftime('%Y-%m-%d %H:%M:%S') }}</dd>
+            {% endif %}
+
+            {% if job.guest_ip %}
+              <dt>{{ t.label_guest_ip }}</dt>
+              <dd class="mono">{{ job.guest_ip }}</dd>
+            {% endif %}
+
+            {% if job.detected_distro %}
+              <dt>{{ t.label_detected_os }}</dt>
+              <dd>
+                <span class="wiz-badge wiz-badge--os wiz-badge--os-{{ job.detected_distro|lower }}">
+                  {{ job.detected_distro }}{% if job.detected_version %} {{ job.detected_version }}{% endif %}
+                </span>
+              </dd>
+            {% endif %}
+
+            {% if job.detected_kernel_release %}
+              <dt>{{ t.label_kernel }}</dt>
+              <dd class="mono">{{ job.detected_kernel_release }}</dd>
+            {% endif %}
+
+            {% if job.exploit_tags %}
+              <dt>{{ t.exploit_tags_label or "Exploit tags" }}</dt>
+              <dd class="row row--wrap">
+                {% for tag in job.exploit_tags %}
+                  <span class="wiz-badge wiz-badge--danger">{{ tag }}</span>
+                {% endfor %}
+              </dd>
+            {% endif %}
+
+            {% if job.exploit_notes %}
+              <dt>{{ t.exploit_notes_label or "Exploit notes" }}</dt>
+              <dd class="small pre-wrap">{{ job.exploit_notes }}</dd>
+            {% endif %}
+
+            {% if job.status == "completed" and job.has_memory_dump %}
+              <dt>{{ t.label_forensics or "Forensics" }}</dt>
+              <dd>
+                <a class="wiz-btn wiz-btn--secondary wiz-btn--sm" href="/volatility?job={{ job.id }}">{{ t.job_analyze_in_volatility or "Analyze in Volatility" }}</a>
+              </dd>
+            {% endif %}
+
+            {% if workload %}
+              <dt>{{ t.label_workload or "Workload" }}</dt>
+              <dd>
+                <span class="wiz-badge wiz-badge--info">{{ workload.display_name }}</span>
+                {% if workload.tags %}
+                  <span class="text-muted small"> · {{ workload.tags | join(', ') }}</span>
+                {% endif %}
+              </dd>
+              {% if job.workload_provisioned_at %}
+                <dt>{{ t.label_provisioned or "Provisioned" }}</dt>
+                <dd>{{ job.workload_provisioned_at.strftime('%Y-%m-%d %H:%M:%S') }}</dd>
+              {% endif %}
+              {% if workload.cve_context %}
+                <dt>{{ t.label_cve_context or "CVE context" }}</dt>
+                <dd class="small text-muted">{{ workload.cve_context }}</dd>
+              {% endif %}
+              {% if job.network_isolated is not none %}
+                <dt>{{ t.network_isolated_badge or "Network isolation" }}</dt>
+                <dd>
+                  {% if job.network_isolated %}
+                    <span class="wiz-badge wiz-badge--warning">
+                      🔒 {{ t.network_isolated_badge or "Isolated" }}
+                    </span>
+                    <span class="text-muted small"> · {{ t.network_isolated_hint }}</span>
+                  {% else %}
+                    <span class="text-muted small">{{ t.network_not_isolated or "Not isolated" }}</span>
+                  {% endif %}
+                </dd>
+              {% endif %}
+            {% endif %}
+          </dl>
+        </div>
+
+        <aside class="job-summary-side">
+          {% set poll = is_active and not job.guest_ip %}
+          {% include "partials/script_runner_wrapper.html" %}
+        </aside>
+      </div>
+
+      {% if artifacts %}
+      <section class="wiz-vm-col wiz-vm-col--purple mt-3">
+        <div class="wiz-vm-col__head">
+          <span class="dot"></span><span>Evidence artifacts</span>
+        </div>
+        <div class="stack">
+          {% for artifact in artifacts %}
+            <div class="job-artifact-card">
+              <div class="row row--between row--wrap job-artifact-card__head">
+                <div class="row row--wrap">
+                  <span class="wiz-badge wiz-badge--info">{{ artifact.kind }}</span>
+                  <strong>{{ artifact.filename or artifact.path.split('/')[-1] }}</strong>
+                  <span class="text-muted small">{{ artifact.producer }}</span>
+                </div>
+                <div class="row row--wrap">
+                  <a class="wiz-btn wiz-btn--secondary wiz-btn--sm" href="/api/v1/artifacts/{{ artifact.id }}/download">artifact</a>
+                  {% if artifact.manifest_path %}
+                    <a class="wiz-btn wiz-btn--ghost wiz-btn--sm" href="/api/v1/artifacts/{{ artifact.id }}/manifest">manifest</a>
+                  {% endif %}
+                  {% if artifact.sha256_sidecar_path %}
+                    <a class="wiz-btn wiz-btn--ghost wiz-btn--sm" href="/api/v1/artifacts/{{ artifact.id }}/sha256">sha256</a>
+                  {% endif %}
+                </div>
+              </div>
+              {% if artifact.sha256 %}
+                <div class="mono small text-muted">sha256 {{ artifact.sha256 }}</div>
+              {% endif %}
+              {% for report in reports %}
+                {% if report.output_artifact_id == artifact.id %}
+                  <div class="small text-muted mt-2">Report: {{ report.title or report.report_type }}{% if report.summary %} · {{ report.summary }}{% endif %}</div>
+                {% endif %}
+              {% endfor %}
+            </div>
+          {% endfor %}
+        </div>
+      </section>
+      {% endif %}
+
+      {% include "partials/live_section.html" %}
+
+    </main>
+  </div>
+</div>
+{% endblock %}

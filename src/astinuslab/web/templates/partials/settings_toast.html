@@ -1,0 +1,13 @@
+{# Out-of-band toast: swaps the persistent #settings-toasts region so the
+   10s/15s fragment polling never wipes an in-view message. Level is
+   explicit ("info"/"err") or derived from the ok flag. #}
+{% set level = toast.level or ('ok' if toast.ok else 'err') %}
+<div id="settings-toasts" class="settings-toasts" role="status" aria-live="polite" hx-swap-oob="true">
+  <div class="settings-toast settings-toast--{{ level }}">
+    <span class="settings-toast__msg">{{ toast.message }}</span>
+    {# No inline onclick: script-src carries no 'unsafe-inline', so the browser
+       refuses it. globals.js handles this, delegated on document. #}
+    <button type="button" class="settings-toast__close" data-dismiss-settings-toast
+            aria-label="{{ t.settings_toast_dismiss or 'Dismiss' }}">×</button>
+  </div>
+</div>

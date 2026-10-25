@@ -1,0 +1,60 @@
+<div id="settings-activity" class="settings-activity-section"
+     hx-get="/settings/fragment/activity" hx-trigger="every 60s" hx-swap="outerHTML">
+
+  <div class="settings-card settings-card--activity">
+    <div class="settings-card__head">
+      <div class="settings-card__title"><span class="dot"></span><span>{{ t.settings_activity_title }}</span></div>
+      <div class="settings-card__note">{{ t.settings_activity_window }}</div>
+    </div>
+
+    <div class="settings-activity-queue">
+      <div class="settings-activity-stat">
+        <span class="settings-activity-stat__value">{{ metrics.queue.queued }}</span>
+        <span class="settings-activity-stat__label">{{ t.settings_activity_queued }}</span>
+      </div>
+      <div class="settings-activity-stat">
+        <span class="settings-activity-stat__value">{{ metrics.queue.running }}</span>
+        <span class="settings-activity-stat__label">{{ t.settings_activity_running }}</span>
+      </div>
+      <div class="settings-activity-stat">
+        <span class="settings-activity-stat__value">
+          {%- if metrics.queue.oldest_queued_age_seconds is none -%}
+            —
+          {%- else -%}
+            {{ (metrics.queue.oldest_queued_age_seconds / 60) | round | int }}m
+          {%- endif -%}
+        </span>
+        <span class="settings-activity-stat__label">{{ t.settings_activity_oldest }}</span>
+      </div>
+    </div>
+
+    {% if metrics.actions %}
+      <div class="settings-activity-scroll">
+        <table class="settings-activity-table">
+          <thead>
+            <tr>
+              <th>{{ t.settings_activity_action }}</th>
+              <th>{{ t.settings_activity_completed }}</th>
+              <th>{{ t.settings_activity_failed }}</th>
+              <th>p50</th>
+              <th>p95</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in metrics.actions %}
+              <tr>
+                <td>{{ row.action_type }}</td>
+                <td>{{ row.completed }}</td>
+                <td class="{% if row.failed %}settings-activity-failed{% endif %}">{{ row.failed }}</td>
+                <td>{% if row.p50_seconds is none %}—{% else %}{{ row.p50_seconds | round | int }}s{% endif %}</td>
+                <td>{% if row.p95_seconds is none %}—{% else %}{{ row.p95_seconds | round | int }}s{% endif %}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="settings-activity-empty">{{ t.settings_activity_empty }}</div>
+    {% endif %}
+  </div>
+</div>

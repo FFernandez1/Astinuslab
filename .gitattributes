@@ -1,0 +1,5 @@
+# This file is reserved for Git archive and content-transform semantics.
+# Generated/runtime and local-agent boundaries belong in .gitignore and are
+# enforced against the tracked file set. No tracked source is export-ignored:
+# release archives deliberately include preferred-form application source,
+# tests, documentation, licenses, examples, and release tooling.

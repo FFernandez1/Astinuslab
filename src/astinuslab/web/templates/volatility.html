@@ -1,0 +1,473 @@
+{% extends "base.html" %}{% import "partials/_guide_link.html" as guide %} {% block title %}AstinusLab — Volatility{% endblock %} {% block head %}
+<link rel="stylesheet" href="/static/css/pages/volatility.css?v={{ asset_v }}" />
+{% endblock %} {% block content %}
+<div class="wiz-shell">
+  <div class="wiz-body">
+    <section
+      class="wiz-main vol"
+      id="vol-workbench"
+      data-vol3-enabled="{{ '1' if vol3_enabled else '0' }}"
+      data-analysis-ready="{{ '1' if vol3_readiness.analysis.ready else '0' }}"
+      data-isf-build-ready="{{ '1' if vol3_readiness.isf_build.ready else '0' }}"
+    >
+      {% if message %}
+      <div class="banner-{{ message_type }} vol-banner" role="{{ 'status' if message_type == 'success' else 'alert' }}">{{ message }}</div>
+      {% endif %}
+
+      {% if not vol3_readiness.enabled or not vol3_readiness.analysis.ready or not vol3_readiness.isf_build.ready
+            or vol3_readiness.analysis.untested %}
+      {#  Two of the three states are configuration, not failure, and must not be red:
+          a deliberately disabled integration (same rationale as
+          partials/live_section.html), and a working integration whose optional ISF
+          builder is unconfigured — the build button stays enabled there because the
+          prebuilt/debuginfod chain still delivers ISFs.  Only an enabled integration
+          whose analysis tool is unready is an actual fault. #}
+      {% set vol_readiness_fault = vol3_readiness.enabled and not vol3_readiness.analysis.ready %}
+      {% set vol_readiness_degraded = vol3_readiness.enabled and vol3_readiness.analysis.ready %}
+      {#  Nothing is unavailable when the only caveat is an untested version, so that
+          state gets its own title rather than borrowing a "capabilities unavailable"
+          one.  If something else is also unready, the degraded title is correct and
+          the untested line renders alongside it. #}
+      {% set vol_readiness_untested_only = vol_readiness_degraded and vol3_readiness.isf_build.ready and vol3_readiness.analysis.untested %}
+      {#  An untested version runs -- it is a caveat on the results, never a block --
+          so it is neutral, and it is the only state that can render while everything
+          reports ready. #}
+      <div class="{{ 'banner-error' if vol_readiness_fault else 'banner-info' }} vol-banner" id="vol-readiness-banner" role="{{ 'alert' if vol_readiness_fault else 'status' }}">
+        {% if vol_readiness_untested_only %}
+        <strong>{{ t.vol_readiness_untested_title or "Volatility version not validated" }}</strong>
+        {% elif vol_readiness_degraded %}
+        <strong>{{ t.vol_readiness_degraded_title or "Some Volatility capabilities unavailable" }}</strong>
+        {% else %}
+        <strong>{{ t.vol_readiness_title or "Volatility capabilities unavailable" }}</strong>
+        {% endif %}
+        {% if not vol3_readiness.enabled %}
+        <span>{{ guide.guide_message(t.vol_readiness_disabled or "Volatility integration is disabled. Enable it in configuration and review {guide}.") }}</span>
+        {% else %}
+          {% if not vol3_readiness.analysis.ready %}
+          <span>{{ guide.guide_message(t.vol_readiness_analysis_unavailable or "Plugin analysis is unavailable because the configured operator-supplied Volatility tool is not ready. Review {guide}.") }}</span>
+          {% endif %}
+          {% if not vol3_readiness.isf_build.ready %}
+          <span>{{ guide.guide_message(t.vol_readiness_isf_unavailable or "Building a Linux ISF from kernel debug symbols is unavailable because the configured operator-supplied dwarf2json tool is not ready. Prebuilt symbol sources and manual ISF upload remain available. Review {guide}.") }}</span>
+          {% endif %}
+          {% if vol3_readiness.analysis.untested %}
+          <span>{{ guide.guide_message((t.vol_readiness_untested_version or "Volatility {version} is newer than the versions tested with this release. Analysis will run, but results have not been validated against this version. Review {guide}.") | replace("{version}", vol3_readiness.analysis.version or "")) }}</span>
+          {% endif %}
+        {% endif %}
+      </div>
+      {% endif %}
+
+      <!-- Header -->
+      <div class="page-head">
+        <div>
+          <h1 class="page-head__title">{{ t.nav_volatility or "Volatility" }}</h1>
+          <p class="page-head__sub">
+            {{ t.vol_subtitle or "Memory forensics workbench — run Volatility 3 plugins against
+            captured dumps and inspect the output." }}
+          </p>
+        </div>
+        <div class="page-head__actions">
+          <button class="wiz-btn wiz-btn--primary" id="run-btn" type="button" disabled{% if not vol3_readiness.analysis.ready %} aria-describedby="vol-readiness-banner"{% endif %}>
+            <svg viewBox="0 0 24 24" fill="currentColor" stroke="none">
+              <path d="M6 4l14 8-14 8z" />
+            </svg>
+            {{ t.vol_run_plugin or "Run plugin" }}
+          </button>
+        </div>
+      </div>
+
+      <!-- Page sections -->
+      <div
+        class="vol-pagetabs"
+        role="tablist"
+        aria-label="{{ t.vol_sections or 'Volatility sections' }}"
+      >
+        <button
+          class="vol-pagetab is-active"
+          id="ptab-workbench-btn"
+          role="tab"
+          type="button"
+          aria-selected="true"
+          aria-controls="ptab-workbench"
+          tabindex="0"
+        >
+          {{ t.vol_tab_workbench or "Workbench" }}
+        </button>
+        <button
+          class="vol-pagetab"
+          id="ptab-activity-btn"
+          role="tab"
+          type="button"
+          aria-selected="false"
+          aria-controls="ptab-activity"
+          tabindex="-1"
+        >
+          {{ t.vol_tab_activity or "Activity & Symbols" }}<span class="n" id="vol-activity-count"
+            >0</span
+          >
+        </button>
+      </div>
+
+      <!-- Workbench tab -->
+      <div
+        class="vol-tabpanel"
+        id="ptab-workbench"
+        role="tabpanel"
+        aria-labelledby="ptab-workbench-btn"
+      >
+        <!-- Active dump context bar -->
+        <div class="vol-dumpbar">
+          <div class="vol-dumpsel">
+            <span class="vol-dumpsel__icon" aria-hidden="true">
+              <svg
+                viewBox="0 0 24 24"
+                width="17"
+                height="17"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.6"
+                stroke-linecap="square"
+              >
+                <ellipse cx="12" cy="6" rx="8" ry="3" />
+                <path d="M4 6v6c0 1.7 3.6 3 8 3s8-1.3 8-3V6M4 12v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6" />
+              </svg>
+            </span>
+            <div>
+              <label for="dump-select">{{ t.vol_active_dump or "Active memory dump" }}</label>
+              <select
+                class="vol-select"
+                id="dump-select"
+                aria-label="{{ t.vol_active_dump or 'Active memory dump' }}"
+              ></select>
+            </div>
+          </div>
+          <div class="vol-dumpmeta">
+            <div class="vol-meta">
+              <b id="m-os">—</b><span>{{ t.vol_os_kernel or "os / kernel" }}</span>
+            </div>
+            <div class="vol-meta">
+              <b id="m-src">—</b><span>{{ t.vol_source_vm or "source vm" }}</span>
+            </div>
+            <div class="vol-meta">
+              <b id="m-size">—</b><span>{{ t.vol_dump_size or "dump size" }}</span>
+            </div>
+            <div class="vol-meta">
+              <b id="m-when">—</b><span>{{ t.vol_captured or "captured" }}</span>
+            </div>
+            <span
+              class="vol-symbadge"
+              id="m-sym"
+              role="button"
+              tabindex="0"
+              aria-label="Symbol table status"
+              ><span class="tick">✓</span><span id="m-sym-txt">symbols</span></span
+            >
+          </div>
+        </div>
+        {#  The three text fields carry an explicit type="text": the shared control
+            style in components.css keys off input[type="text"], which an attribute-less
+            <input> does not match, so omitting it drops the field back to unstyled
+            browser defaults. #}
+        <form id="analysis-context-form" class="vol-context" hidden>
+          <p class="vol-context__help">{{ t.vol_context_help }}</p>
+          <div class="vol-context__grid">
+            <div class="vol-context__field">
+              <label for="context-kernel">{{ t.vol_context_kernel }}</label>
+              <input id="context-kernel" type="text" required maxlength="255" autocomplete="off" spellcheck="false" />
+            </div>
+            <div class="vol-context__field">
+              <label for="context-architecture">{{ t.vol_context_arch }}</label>
+              <input id="context-architecture" type="text" required pattern="x86_64" autocomplete="off" spellcheck="false" />
+            </div>
+            <div class="vol-context__field vol-context__field--wide">
+              <label for="context-note">{{ t.vol_context_note }}</label>
+              <input id="context-note" type="text" required maxlength="2048" autocomplete="off" />
+            </div>
+          </div>
+          <div class="vol-context__foot">
+            <label class="vol-context__check">
+              <input id="context-verified" type="checkbox" required />
+              <span>{{ t.vol_context_verified }}</span>
+            </label>
+            <button id="context-submit" class="wiz-btn wiz-btn--primary wiz-btn--xs" type="submit">{{ t.vol_context_submit }}</button>
+            <span id="context-status" class="vol-context__status" role="status" aria-live="polite"></span>
+          </div>
+        </form>
+
+
+        <!-- Workbench -->
+        <div class="vol-grid">
+          <!-- Plugin catalog -->
+          <div class="vol-panel vol-catalog">
+            <div class="vol-panel__head">
+              {{ t.vol_plugin_catalog or "Plugin catalog" }}
+              <span class="count" id="plugin-count">0</span>
+            </div>
+            <div class="vol-search">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
+                stroke-linecap="round"
+              >
+                <circle cx="11" cy="11" r="7" />
+                <path d="M21 21l-4-4" />
+              </svg>
+              <input
+                type="text"
+                id="plugin-search"
+                placeholder="{{ t.vol_filter_plugins or 'filter plugins…' }}"
+                autocomplete="off"
+                spellcheck="false"
+                aria-label="{{ t.vol_filter_plugins or 'filter plugins' }}"
+              />
+            </div>
+            <div class="vol-cat-scroll" id="catalog"></div>
+          </div>
+
+          <!-- Results -->
+          <div class="vol-panel" id="results-panel">
+            <div class="vol-cmdbar">
+              <code class="vol-cmd" id="cmd"
+                ><span class="prompt">$</span> vol3 <span class="flag">-f</span> &lt;dump&gt;
+                <span class="plug">&lt;plugin&gt;</span></code
+              >
+              <button
+                class="wiz-btn wiz-btn--ghost wiz-btn--xs vol-copy"
+                id="copy-cmd"
+                type="button"
+              >
+                copy
+              </button>
+              <button
+                class="wiz-btn wiz-btn--ghost wiz-btn--xs vol-rerun"
+                id="rerun-cmd"
+                type="button"
+                disabled
+                {% if not vol3_readiness.analysis.ready %}aria-describedby="vol-readiness-banner"{% endif %}
+              >
+                ↻ {{ t.vol_rerun or "Re-run" }}
+              </button>
+            </div>
+            <div id="yara-input" hidden>
+              <label class="vol-label" for="yara-rules"
+                >{{ t.vol_yara_label or "YARA rules" }}</label
+              >
+              <textarea
+                id="yara-rules"
+                rows="6"
+                spellcheck="false"
+                placeholder="{{ t.vol_yara_placeholder or 'rule example { strings: $a = \"evil\" condition: $a }' }}"
+              ></textarea>
+            </div>
+            <div class="vol-taskmeta" id="taskmeta">
+              <span class="vol-pill vol-pill--queued" id="task-pill"
+                ><span class="dot"></span><span id="task-state">idle</span></span
+              >
+              <span class="sep">·</span>
+              <span><span class="k">task</span> <span class="v" id="task-id">—</span></span>
+              <button type="button" class="vol-btn" id="check-run-status" hidden>{{ t.vol_check_status }}</button>
+              <span class="sep">·</span>
+              <span><span class="k">elapsed</span> <span class="v" id="task-elapsed">—</span></span>
+              <span class="vol-findings" id="findings"></span>
+            </div>
+            <div id="results-body">
+              <div class="vol-empty" id="results-empty">
+                {{ t.vol_results_empty or "Select a dump and a plugin to run Volatility 3 analysis.
+                Results appear here." }}
+              </div>
+              <div class="vol-empty" id="results-notrun" hidden>
+                {{ t.vol_not_run_yet or "Not run yet — press Run plugin to analyze this dump." }}
+              </div>
+              <div id="results-scaffold" hidden>
+                <div class="vol-tabs">
+                  <button
+                    class="vol-tab is-active"
+                    data-tab="table"
+                    id="tab-table-btn"
+                    type="button"
+                  >
+                    {{ t.vol_tab_table or "Table" }}<span class="n" id="tab-rows">0</span>
+                  </button>
+                  <button class="vol-tab" data-tab="raw" id="tab-raw-btn" type="button">
+                    {{ t.vol_tab_raw or "Raw console" }}
+                  </button>
+                </div>
+                <div id="view-table">
+                  <div class="vol-tablewrap table-scroll" id="tablewrap">
+                    <table class="vol-table">
+                      <thead id="res-head"></thead>
+                      <tbody id="res-body"></tbody>
+                    </table>
+                  </div>
+                </div>
+                <pre class="vol-raw" id="view-raw" hidden></pre>
+                <div class="vol-resfoot">
+                  <span id="foot-summary">—</span>
+                  <span class="spacer"></span>
+                  <a
+                    class="vol-link"
+                    id="evidence-link"
+                    href="#"
+                    target="_blank"
+                    rel="noopener"
+                    hidden
+                    >{{ t.vol_download_evidence or "Download evidence" }}</a
+                  >
+                  <button class="vol-link" id="export-csv" type="button" disabled>
+                    {{ t.vol_download_csv or "Download CSV" }}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- /Workbench tab -->
+
+      <!-- Activity & Symbols tab -->
+      <div
+        class="vol-tabpanel"
+        id="ptab-activity"
+        role="tabpanel"
+        aria-labelledby="ptab-activity-btn"
+        hidden
+      >
+        <!-- Bottom: queue + symbols -->
+        <div class="vol-bottom">
+          <div class="vol-panel">
+            <div class="vol-panel__head">
+              {{ t.vol_analysis_queue or "Analysis queue" }} <span class="count">Celery</span>
+              <button type="button" id="vol-queue-clear" class="vol-queue-clear">
+                {{ t.vol_queue_clear or "Clear all" }}
+              </button>
+            </div>
+            <div class="table-scroll">
+              <table class="vol-mini">
+                <thead>
+                  <tr>
+                    <th class="mono">{{ t.vol_col_task or "Task" }}</th>
+                    <th>{{ t.vol_col_plugin or "Plugin" }}</th>
+                    <th>{{ t.vol_col_dump or "Dump" }}</th>
+                    <th>{{ t.vol_col_status or "Status" }}</th>
+                    <th>{{ t.vol_col_duration or "Duration" }}</th>
+                    <th>{{ t.vol_col_finished or "Finished" }}</th>
+                    <th class="vol-col-actions">{{ t.vol_col_actions or "" }}</th>
+                  </tr>
+                </thead>
+                <tbody id="queue-body"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="vol-panel">
+            <div class="vol-panel__head">
+              {{ t.vol_symbol_tables or "Symbol tables · ISF" }}
+              <span class="count" id="isf-count"
+                >{{ built_target_ids|length }}/{{ targets|length }}</span
+              >
+            </div>
+            <div id="isf-list">
+              {% if targets %} {% for tgt in targets %}
+              <div class="vol-isfrow" data-target-id="{{ tgt.id }}">
+                <div>
+                  <div class="vol-isfrow__name">{{ tgt.display_name or tgt.id }}</div>
+                  <div class="vol-isfrow__kernel">
+                    {{ tgt.distro or "linux" }} {{ tgt.version or "" }}
+                  </div>
+                </div>
+                <div class="vol-isf-state">
+                  <div data-isf-status role="status" aria-live="polite" aria-atomic="true"></div>
+                  {% if tgt.id in built_target_ids %}
+                  <span class="vol-dot-ok">✓ {{ t.vol_built or "built" }}</span>
+                  {% endif %} {% if scenarios %} {% if tgt.id not in built_target_ids %}
+                  <form action="/volatility/build" method="post" class="vol-isf-form">
+                    {% include "partials/csrf_input.html" %}
+                    <input type="hidden" name="target_id" value="{{ tgt.id }}" />
+                    <input type="hidden" name="scenario_id" value="{{ default_scenario_id }}" />
+                    {# aria-describedby tracks `disabled`, never isf_build readiness: an
+                       enabled, working button must not announce "capabilities unavailable"
+                       to a screen reader. #}
+                    <button type="submit" class="wiz-btn wiz-btn--secondary wiz-btn--xs"{% if not vol3_readiness.enabled %} disabled aria-describedby="vol-readiness-banner"{% endif %}>
+                      {{ t.vol_build_isf or "Build ISF" }}
+                    </button>
+                  </form>
+                  {% endif %}
+                  <button
+                    type="button"
+                    class="wiz-btn wiz-btn--secondary wiz-btn--xs"
+                    data-upload-isf-target
+                    data-target-id="{{ tgt.id }}"
+                    data-scenario-id="{{ default_scenario_id }}"
+                  >
+                    {{ t.vol_upload_isf or "Upload ISF" }}
+                  </button>
+                  <input type="file" accept=".json,application/json" hidden data-upload-isf-input />
+                  {% elif tgt.id not in built_target_ids %}
+                  <span class="vol-dot-pend">{{ t.vol_no_scenario or "no scenario" }}</span>
+                  {% endif %}
+                </div>
+              </div>
+              {% endfor %} {% else %}
+              <div class="vol-mini-empty">
+                {{ t.vol_no_linux_targets or "No enabled Linux targets are ready for ISF builds." }}
+              </div>
+              {% endif %}
+            </div>
+            <div class="vol-resfoot">
+              <span class="vol-isf-note"
+                >{{ t.vol_isf_note or "Linux dumps need a matching ISF symbol table before plugins
+                resolve. Windows targets use PDB symbols automatically." }}</span
+              >
+            </div>
+          </div>
+        </div>
+
+        <!-- ISF build history (preserved) -->
+        <section class="vol-panel vol-history" aria-labelledby="vol-history-title">
+          <div class="vol-panel__head" id="vol-history-title">
+            {{ t.vol_build_history or "ISF build history" }}
+            <span class="count">{{ history|length }}</span>
+          </div>
+          <div class="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th>{{ t.vol_col_job or "Job" }}</th>
+                  <th>{{ t.vol_col_target or "Target" }}</th>
+                  <th>{{ t.vol_col_status or "Status" }}</th>
+                  <th>{{ t.vol_col_kernel or "Kernel" }}</th>
+                  <th>{{ t.vol_col_source or "Source" }}</th>
+                  <th>{{ t.vol_col_artifact or "Artifact" }}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% if history %} {% for row in history %}
+                <tr>
+                  <td><a href="/jobs/{{ row.job.id }}" class="mono">{{ row.job.id[:8] }}</a></td>
+                  <td>{{ row.job.target_id }}</td>
+                  <td>
+                    <span class="badge badge-{{ row.job.status }}">{{ row.job.status }}</span>
+                  </td>
+                  <td class="mono">{{ row.artifact_kernel_release or "—" }}</td>
+                  <td>{{ row.artifact_source or "pending" }}</td>
+                  <td class="mono" title="{{ row.artifact_path or '' }}">
+                    {{ row.artifact_path.rsplit('/', 1)[-1] if row.artifact_path else "—" }}
+                  </td>
+                </tr>
+                {% endfor %} {% else %}
+                <tr>
+                  <td colspan="6">{{ t.vol_no_builds or "No ISF build jobs yet." }}</td>
+                </tr>
+                {% endif %}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+      <!-- /Activity & Symbols tab -->
+    </section>
+  </div>
+</div>
+<script type="module" src="/static/volatility/index.js?v={{ asset_v }}"></script>
+{% endblock %}

@@ -1,0 +1,63 @@
+{# dl = {status, url, filename, bytes_done, total, error, started_at}  dl_id = str #}
+<div
+  id="dl-{{ dl_id }}"
+  {% if dl.status == 'running' %}
+    hx-get="/images/fetch-status/{{ dl_id }}"
+    hx-trigger="every 2s"
+    hx-swap="outerHTML"
+  {% endif %}
+  style="margin-bottom:0.75rem; padding:0.65rem 0.85rem;
+         border:1px solid {{ 'var(--c-success-bd)' if dl.status == 'done' else ('var(--c-danger-bd)' if dl.status == 'error' else 'var(--c-info-bd)') }};
+         border-radius:var(--radius-md);
+         background:{{ 'var(--c-success-bg)' if dl.status == 'done' else ('var(--c-danger-bg)' if dl.status == 'error' else 'var(--c-info-bg)') }};"
+>
+  <div style="display:flex; align-items:center; gap:0.6rem; margin-bottom:0.35rem">
+    <span style="font-size:var(--text-lg)">
+      {% if dl.status == 'done' %}✅
+      {% elif dl.status == 'error' %}❌
+      {% else %}<span class="spinner"></span>
+      {% endif %}
+    </span>
+    <span class="mono break-all" style="font-weight:600">{{ dl.filename }}</span>
+    <span class="badge nowrap badge-{{ 'completed' if dl.status == 'done' else ('failed' if dl.status == 'error' else 'preparing_image') }} ml-auto">
+      {{ dl.status }}
+    </span>
+  </div>
+
+  {# Progress bar (running only) #}
+  {% if dl.status == 'running' %}
+    {% if dl.total and dl.total > 0 %}
+      {% set pct = [(dl.bytes_done / dl.total * 100), 100]|min %}
+      <div class="progress-track" role="progressbar" aria-label="{{ dl.filename }} download progress"
+           aria-valuemin="0" aria-valuemax="100" aria-valuenow="{{ '%.0f'|format(pct) }}">
+        <div class="progress-fill" style="width:{{ '%.1f'|format(pct) }}%"></div>
+      </div>
+      <div class="text-muted small">
+        {{ "%.0f"|format(dl.bytes_done / 1048576) }} MB / {{ "%.0f"|format(dl.total / 1048576) }} MB
+        &nbsp;({{ "%.0f"|format(pct) }}%)
+      </div>
+    {% else %}
+      <div class="progress-track" role="progressbar" aria-label="{{ dl.filename }} download progress">
+        <div class="progress-fill" style="width:100%"></div>
+      </div>
+      <div class="text-muted small">
+        {{ "%.0f"|format(dl.bytes_done / 1048576) }} {{ t.mb_downloaded }}
+      </div>
+    {% endif %}
+  {% endif %}
+
+  {# Done info #}
+  {% if dl.status == 'done' %}
+    <div class="text-muted small">{{ t.download_complete }} <code>images/definitions/{{ dl.filename }}</code></div>
+  {% endif %}
+
+  {# Error #}
+  {% if dl.status == 'error' %}
+    <div class="small text-danger form-hint">{{ dl.error }}</div>
+  {% endif %}
+
+  {# URL #}
+  <div class="text-muted small break-all" style="margin-top:0.3rem; font-size:var(--text-xs); opacity:0.7">
+    {{ dl.url[:80] }}{% if dl.url|length > 80 %}…{% endif %}
+  </div>
+</div>

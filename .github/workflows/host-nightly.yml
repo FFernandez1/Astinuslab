@@ -1,0 +1,108 @@
+name: Host nightly (real libvirt)
+
+on:
+  # The schedule is paused until a [self-hosted, libvirt] runner is registered
+  # (docs/dev/host-nightly-runner.md); without one every nightly run queues and
+  # fails. Restore it once the runner is online:
+  # schedule:
+  #   - cron: "0 3 * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  host-real:
+    runs-on: [self-hosted, libvirt]
+    # Must exceed the SUM of the pytest.mark.timeout budgets in
+    # tests/python/host_real, currently 18000s (300 min): capture rows
+    # 1800+2700+2700+2700, Volatility rows 300+300+300+7200. Those per-test
+    # markers are the real bounds and must stay the binding constraint -- a
+    # marker firing names the row that hung, whereas hitting this job timeout
+    # cancels the run opaquely and tells you nothing. Keep headroom above the
+    # sum for checkout and dependency install.
+    timeout-minutes: 360
+    env:
+      ASTINUSLAB_REAL_HOST: "1"
+      # Operator-supplied host tools. AstinusLab never downloads, installs,
+      # vendors, or imports Volatility 3 or dwarf2json: the operator provisions
+      # both on this runner, outside the AstinusLab tree, and these variables
+      # only point the backend at what is already there. No step in this
+      # workflow may fetch either tool.
+      #
+      # Runner-specific values, so they are never committed. Set them as GitHub
+      # Actions repository or environment variables:
+      #   HOST_RUNNER_VOL3_VOLATILITY_BIN    absolute path to the operator's `vol`
+      #   HOST_RUNNER_VOL3_DWARF2JSON_PATH   absolute path to the operator's dwarf2json
+      #   HOST_RUNNER_VOL3_DWARF2JSON_SHA256 64-hex SHA-256 pin of that exact file
+      # They are variables rather than secrets on purpose: none is a credential,
+      # and masking the pin would redact it from the very failure output that
+      # makes a hash mismatch diagnosable. See docs/dev/host-nightly-runner.md.
+      ASTINUSLAB_VOL3_ENABLED: "true"
+      ASTINUSLAB_VOL3_VOLATILITY_BIN: ${{ vars.HOST_RUNNER_VOL3_VOLATILITY_BIN }}
+      ASTINUSLAB_VOL3_DWARF2JSON_PATH: ${{ vars.HOST_RUNNER_VOL3_DWARF2JSON_PATH }}
+      ASTINUSLAB_VOL3_DWARF2JSON_SHA256: ${{ vars.HOST_RUNNER_VOL3_DWARF2JSON_SHA256 }}
+    steps:
+      - uses: actions/checkout@v4
+
+      # Runs before anything imports the backend settings: an unset pin would
+      # otherwise reach Settings as an empty string and fail validation with a
+      # stack trace instead of an actionable message. This does not install
+      # anything; it only reports what the operator still has to provision.
+      - name: Preflight - operator-supplied Volatility configuration
+        run: |
+          set -euo pipefail
+          fail() { echo "::error::$*"; failed=1; }
+          failed=0
+
+          vol_bin="${ASTINUSLAB_VOL3_VOLATILITY_BIN:-}"
+          d2j_bin="${ASTINUSLAB_VOL3_DWARF2JSON_PATH:-}"
+          d2j_sha="${ASTINUSLAB_VOL3_DWARF2JSON_SHA256:-}"
+
+          if [ -z "$vol_bin" ]; then
+            fail "HOST_RUNNER_VOL3_VOLATILITY_BIN is not set on this runner."
+          elif [ ! -x "$vol_bin" ]; then
+            fail "HOST_RUNNER_VOL3_VOLATILITY_BIN=$vol_bin is not an executable file."
+          fi
+
+          if [ -z "$d2j_bin" ]; then
+            fail "HOST_RUNNER_VOL3_DWARF2JSON_PATH is not set on this runner."
+          elif [ ! -x "$d2j_bin" ]; then
+            fail "HOST_RUNNER_VOL3_DWARF2JSON_PATH=$d2j_bin is not an executable file."
+          fi
+
+          if [ -z "$d2j_sha" ]; then
+            fail "HOST_RUNNER_VOL3_DWARF2JSON_SHA256 is not set on this runner."
+          elif ! printf '%s' "$d2j_sha" | grep -Eq '^(sha256:)?[0-9a-fA-F]{64}$'; then
+            fail "HOST_RUNNER_VOL3_DWARF2JSON_SHA256 is not a 64-character SHA-256 value."
+          fi
+
+          # The licensing boundary: operator tools live outside the checkout.
+          if [ -n "${GITHUB_WORKSPACE:-}" ]; then
+            for tool in "$vol_bin" "$d2j_bin"; do
+              case "$tool" in
+                "$GITHUB_WORKSPACE"/*)
+                  fail "$tool is inside the AstinusLab checkout; provision operator-supplied tools outside the tree."
+                  ;;
+              esac
+            done
+          fi
+
+          if [ "$failed" -ne 0 ]; then
+            echo "::error::The nightly runner has no usable operator-supplied Volatility configuration."
+            echo "::error::This is a failure, not a pass. Provision the runner per docs/dev/host-nightly-runner.md."
+            exit 1
+          fi
+          echo "Operator-supplied Volatility configuration is present."
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements-dev.lock
+          python -m pip install -e . --no-deps
+      - name: Real-host smoke tier
+        run: python -m pytest tests/python/host_real -m host_real -q

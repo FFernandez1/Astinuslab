@@ -1,0 +1,24 @@
+{% if results %}
+  {% for r in results %}
+    <div style="margin-bottom:0.85rem; border:1px solid {{ 'var(--c-success-bd)' if r.success else 'var(--c-danger-bd)' }}; border-radius:var(--radius-md); overflow:hidden;">
+      <div style="display:flex; align-items:center; gap:0.6rem; padding:0.5rem 0.75rem;
+                  background:{{ 'var(--c-success-bg)' if r.success else 'var(--c-danger-bg)' }}; border-bottom:1px solid {{ 'var(--c-success-bd)' if r.success else 'var(--c-danger-bd)' }};">
+        <span class="mono" style="font-weight:600">{{ r.filename }}</span>
+        <span class="badge badge-{{ 'completed' if r.success else 'failed' }}">
+          exit {{ r.exit_code }}
+        </span>
+        <span class="text-muted small ml-auto">{{ r.duration_ms }}ms</span>
+      </div>
+      {% if r.error %}
+        <div class="small text-danger" style="padding:0.6rem 0.75rem">{{ r.error }}</div>
+      {% endif %}
+      {% if r.output %}
+        <pre class="script-output-pre">{{ r.output }}</pre>
+      {% elif not r.error %}
+        <div class="text-muted small" style="padding:0.5rem 0.75rem; font-style:italic">
+          {{ t.no_output }}
+        </div>
+      {% endif %}
+    </div>
+  {% endfor %}
+{% endif %}

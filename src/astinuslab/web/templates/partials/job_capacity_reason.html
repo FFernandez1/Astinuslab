@@ -1,0 +1,6 @@
+{% if job.status == 'waiting_for_capacity' %}
+<div class="job-capacity-wait small">
+  {% if job.capacity_reason %}<p>{{ job.capacity_reason }}</p>{% endif %}
+  <p class="text-muted">{{ t.job_capacity_auto_resume or 'This Job will start automatically when capacity becomes available.' }}</p>
+</div>
+{% endif %}

@@ -1,0 +1,45 @@
+[Unit]
+Description=AstinusLab Analysis Worker (interactive Volatility 3 queue)
+After=network.target libvirtd.service astinuslab-api@%i.service
+Wants=libvirtd.service
+
+[Service]
+Type=simple
+User=%i
+Group=%i
+WorkingDirectory=@@CURRENT_DIR@@
+Environment=ASTINUSLAB_DATA_DIR=@@INSTALL_DIR@@
+# stdout goes to the journal, so the in-app Logs page needs its own copy.
+Environment=ASTINUSLAB_LOG_TO_FILE=true
+EnvironmentFile=-@@INSTALL_DIR@@/config/astinuslab.env
+# Do not raise --concurrency: each worker runs one vol3 at a time; same-job
+# serialization across the runner and this worker is enforced by the per-job
+# blocking_file_lock. This worker consumes ONLY the analysis queue.
+ExecStart=@@CURRENT_DIR@@/.venv/bin/celery -A astinuslab.jobs.celery_main worker -Q analysis -n analysis@%%h --loglevel=INFO --concurrency=1 --pool=threads
+Restart=on-failure
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=astinuslab-analysis
+
+# Privilege hardening — mirrors astinuslab-runner.service.
+# NoNewPrivileges is intentionally NOT set: workers invoke privileged helpers
+# via `sudo -n` (/etc/sudoers.d/astinuslab-runner); NoNewPrivileges blocks sudo.
+PrivateTmp=true
+ProtectSystem=strict
+ReadOnlyPaths=@@INSTALL_DIR@@
+@@PROTECT_HOME@@
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+UMask=0007
+LockPersonality=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectKernelLogs=true
+ProtectControlGroups=true
+# This worker consumes only the analysis queue, whose single task reads and
+# writes the storage tree and the Volatility symbol cache. It never creates a
+# VM, so it reaches no virtualization path at all.
+ReadWritePaths=@@STORAGE_ROOT@@ @@INSTALL_DIR@@/vol3/symbols
+
+[Install]
+WantedBy=multi-user.target

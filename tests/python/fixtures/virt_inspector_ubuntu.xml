@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<operatingsystems>
+  <operatingsystem>
+    <root>/dev/sda1</root>
+    <name>linux</name>
+    <distro>ubuntu</distro>
+    <product_name>Ubuntu 24.04 LTS</product_name>
+    <major_version>24</major_version>
+    <minor_version>04</minor_version>
+    <package_format>deb</package_format>
+    <package_management>apt</package_management>
+    <arch>x86_64</arch>
+    <osinfo>ubuntu24.04</osinfo>
+    <hostname>ubuntu</hostname>
+  </operatingsystem>
+</operatingsystems>

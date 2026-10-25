@@ -1,0 +1,143 @@
+{% extends "base.html" %} {% block title %}{{ t.nav_workload_cache or "Workload Cache" }} —
+AstinusLab{% endblock %} {% block content %}
+<div class="wiz-shell">
+  <div class="wiz-body">
+    <main class="wiz-main">
+      <div class="page-head">
+        <div>
+          <h1 class="page-head__title">{{ t.nav_storage }}</h1>
+          <p class="page-head__sub">
+            {{ t.workload_cache_subtitle or "Snapshot images saved after first workload
+            provisioning. Subsequent jobs restore from cache instead of reinstalling." }}
+          </p>
+        </div>
+        {% if entries %}
+        <div class="page-head__actions">
+          <form
+            method="post"
+            action="/workload-cache/delete-all"
+            class="m-0"
+            data-confirm="{{ t.workload_cache_confirm_delete_all or 'Delete ALL workload cache entries? This cannot be undone.' }}"
+          >
+            {% include "partials/csrf_input.html" %}
+            <button type="submit" class="wiz-btn wiz-btn--ghost button-danger-text">
+              {{ t.workload_cache_btn_delete_all or "Delete all" }}
+            </button>
+          </form>
+        </div>
+        {% endif %}
+      </div>
+      {% include "partials/storage_tabs.html" %} {% if message %}
+      <div class="banner-{{ message_type or 'error' }} banner--compact" role="{{ 'status' if message_type == 'success' else 'alert' }}">{{ message }}</div>
+      {% endif %} {% if entries %}
+      <div class="metric-card-grid">
+        <div class="wiz-vm-col wiz-vm-col--info metric-card">
+          <div class="metric-label">{{ t.workload_cache_stat_entries or "Cached snapshots" }}</div>
+          <div class="metric-value metric-value--lg">{{ entries|length }}</div>
+        </div>
+        <div class="wiz-vm-col wiz-vm-col--success metric-card">
+          <div class="metric-label">{{ t.workload_cache_stat_total_size or "Total size" }}</div>
+          <div class="metric-value metric-value--lg">{{ total_size_human }}</div>
+        </div>
+        <div class="wiz-vm-col wiz-vm-col--target metric-card">
+          <div class="metric-label">
+            {{ t.workload_cache_stat_workloads or "Unique workloads" }}
+          </div>
+          <div class="metric-value metric-value--lg">
+            {{ entries | map(attribute='workload_id') | list | unique | list | length }}
+          </div>
+        </div>
+      </div>
+
+      <div class="vault-group-card">
+        <div class="row row--between row--wrap vault-group-card__head">
+          <span class="section-label">
+            {{ t.workload_cache_table_title or "Snapshot cache" }}
+            <span class="count-badge">{{ entries|length }}</span>
+          </span>
+          <button
+            form="cache-form"
+            type="submit"
+            class="wiz-btn wiz-btn--ghost button-danger-text"
+            data-confirm="{{ t.workload_cache_confirm_delete_selected or 'Delete selected cache entries?' }}"
+          >
+            {{ t.btn_delete_selected }}
+          </button>
+        </div>
+        <form action="/workload-cache/bulk-delete" method="post" id="cache-form">
+          {% include "partials/csrf_input.html" %}
+        </form>
+          <div class="table-scroll">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th class="admin-table__check">
+                    <input
+                      type="checkbox"
+                      data-toggle-all=".wc-select"
+                      aria-label="{{ t.select_all or 'Select all' }}"
+                    />
+                  </th>
+                  <th>{{ t.workload_cache_col_target or "Target" }}</th>
+                  <th>{{ t.workload_cache_col_workload or "Workload" }}</th>
+                  <th>{{ t.workload_cache_col_base_image or "Base image" }}</th>
+                  <th>{{ t.workload_cache_col_size or "Size" }}</th>
+                  <th>{{ t.workload_cache_col_created or "Created" }}</th>
+                  <th class="admin-table__actions"></th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for e in entries %}
+                <tr class="admin-table__row">
+                  <td>
+                    <input
+                      type="checkbox"
+                      class="wc-select"
+                      name="keys"
+                      form="cache-form"
+                      value="{{ e.key }}"
+                      aria-label="{{ t.workload_cache_col_workload or 'Select' }} {{ e.workload_id }}"
+                    />
+                  </td>
+                  <td>
+                    <span class="wiz-badge wiz-badge--info">{{ e.target_id }}</span>
+                  </td>
+                  <td class="admin-table__strong">{{ e.workload_id }}</td>
+                  <td class="mono text-muted text-2xs">{{ e.base_image }}</td>
+                  <td class="admin-table__muted-mono">{{ e.size_human }}</td>
+                  <td class="admin-table__muted-mono">{{ e.created_at }}</td>
+                  <td class="admin-table__actions">
+                    <form
+                      method="post"
+                      action="/workload-cache/delete"
+                      class="m-0"
+                      data-confirm="{{ t.workload_cache_confirm_delete_one or 'Delete this cache entry?' }}"
+                    >
+                      {% include "partials/csrf_input.html" %}
+                      <input type="hidden" name="key" value="{{ e.key }}" />
+                      <button
+                        type="submit"
+                        aria-label="{{ t.delete_dump or 'Delete' }} {{ e.workload_id }}"
+                        class="wiz-btn wiz-btn--ghost wiz-btn--xs button-danger-text"
+                      >
+                        ✕
+                      </button>
+                    </form>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+      </div>
+      {% else %}
+      <div class="vault-empty-state">
+        {{ t.workload_cache_empty or "No workload snapshots cached yet. The cache is built
+        automatically after the first successful provisioning of each target + workload
+        combination." }}
+      </div>
+      {% endif %}
+    </main>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,132 @@
+# Source placeholders and reviewed examples are re-included next to the broad
+# runtime/configuration rule that excludes their mutable siblings.
+
+# Python and Node environments, caches, and dependency trees
+.venv/
+/.venv*/
+venv/
+.tox/
+.nox/
+.hypothesis/
+.mypy_cache/
+.pytest_cache/
+# Per-test scratch roots some installer tests create beside the checkout.
+/.pytest-*/
+.ruff_cache/
+__pycache__/
+*.py[cod]
+node_modules/
+bun.lock
+
+# Build, package, coverage, documentation, and analysis output
+/build/
+/dist/
+*.egg-info/
+.coverage
+.coverage.*
+coverage.xml
+coverage.json
+htmlcov/
+/site/
+graphify-out/
+
+# Mutable runtime state
+/storage/*
+!/storage/.gitkeep
+*.db
+*.db-wal
+*.db-shm
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
+*.sqlite3
+*.sqlite3-wal
+*.sqlite3-shm
+*.db-journal
+*.sqlite-journal
+*.sqlite3-journal
+*.log
+*.dump
+*.dmp
+*.mem
+*.vmem
+*.lime
+*.core
+
+# Large or operator-owned artifacts
+/images/definitions/*.img
+/images/definitions/*.qcow2
+/images/definitions/*.raw
+/images/definitions/*.vdi
+/images/definitions/*.vhd
+/images/definitions/*.vhdx
+/images/definitions/*.vmdk
+/images/definitions/*.iso
+/images/definitions/*.iso.meta.json
+/images/definitions/*.sha256
+/images/definitions/*.manifest.json
+/images/definitions/*.bak
+/vol3/bin/
+/vol3/symbols/*
+!/vol3/symbols/.gitkeep
+
+# Local and live operator configuration; reviewed examples remain source
+/.env
+.env.*
+*.env
+!*.example.env
+!.env.example
+*.local.*
+credentials.*
+!credentials.example.*
+id_dsa
+id_ecdsa
+id_ed25519
+id_rsa
+*.key
+*.p12
+*.pfx
+*.pem
+/astinuslab.toml
+/config/catalog/*.yaml
+!/config/catalog/*.example.yaml
+/config/catalog/*.yml
+!/config/catalog/*.example.yml
+
+# Test and browser output
+/test-results/
+/playwright-report/
+/tests/browser/fixtures/images/*.meta.json
+
+# Documentation design and extraction output
+/mockup/
+/mockup*.html
+/playground-redesign-mockup-v*.html
+# Design canvases and mockups are maintained outside the public repository.
+/design/
+
+# Agent tooling, local review state, and external release-evidence workspace.
+# Agent instructions, skills and ignore files are local maintainer state.
+/.worktrees/
+/.agents/
+/.antigravitycli/
+/.claude/
+/.codex/
+/.aiderignore
+/.claudeignore
+/.codeiumignore
+/.continueignore
+/.cursorignore
+/AGENTS.md
+/CLAUDE.md
+/GEMINI.md
+/.hermes/
+/.superpowers/
+/docs/superpowers/
+/plans/
+/review/
+/reviewfix/
+/reviews/
+/release-evidence/
+/skills-lock.json
+/CLAUDE.local.md

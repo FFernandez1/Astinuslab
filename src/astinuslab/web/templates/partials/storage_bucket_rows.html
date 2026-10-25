@@ -1,0 +1,43 @@
+<div id="storage-summary" class="settings-storage-section">
+  {% set buckets = [
+    {'id':'dumps','label':t.label_dumps,'value':stats.dumps_mb / 1024,'unit':'GiB','count': stats.dumps_count|string ~ ' ' ~ t.files_unit,'bg':'rgba(90,161,255,0.85)','goto':'/dumps'},
+    {'id':'cache','label':t.settings_workload_cache_label,'value':stats.workload_cache_mb / 1024,'unit':'GiB','count': stats.workload_cache_count|string ~ ' ' ~ t.settings_snapshots_unit,'bg':'rgba(167,139,250,0.85)','goto':'/workload-cache'},
+    {'id':'logs','label':t.label_logs,'value':stats.logs_mb / 1024,'unit':'GiB','count': stats.logs_count|string ~ ' ' ~ t.files_unit,'bg':'rgba(232,163,65,0.85)','goto':'/logs'},
+    {'id':'symbols','label':t.settings_symbols_label or 'symbol cache','value':(stats.symbols_mb or 0) / 1024,'unit':'GiB','count': (stats.symbols_count or 0)|string ~ ' ' ~ t.files_unit,'bg':'rgba(45,212,191,0.85)','goto':None},
+    {'id':'free','label':t.settings_free_label,'value':stats.free_gb,'unit':'GiB','count':t.settings_available_captures,'bg':'var(--surface-3)','goto':None}
+  ] %}
+  {% set total = buckets|sum(attribute='value') %}
+
+  <div class="settings-card settings-card--storage">
+    <div class="settings-card__head">
+      <div class="settings-card__title"><span class="dot"></span><span>{{ t.storage_title }}</span></div>
+      <div class="settings-card__note"><span title="{{ base_dir }}">{{ '%.1f'|format(total) }} GiB {{ t.settings_volume_suffix }}</span></div>
+    </div>
+
+    <div class="settings-storage-bar" aria-label="{{ t.settings_storage_usage_aria }}">
+      {% for b in buckets %}
+        {% if total > 0 %}
+          <div title="{{ b.label }} · {{ '%.2f'|format(b.value) }} {{ b.unit }}" style="width:{{ '%.2f'|format(b.value / total * 100) }}%; background:{{ b.bg }};"></div>
+        {% endif %}
+      {% endfor %}
+    </div>
+
+    <div class="settings-storage-rows">
+      {% for b in buckets %}
+        {% if b.goto %}
+          <a class="settings-storage-row" href="{{ b.goto }}">
+        {% else %}
+          <div class="settings-storage-row">
+        {% endif %}
+          <div class="settings-bucket-name">
+            <span class="settings-bucket-dot" style="background:{{ b.bg }};{% if b.id == 'free' %} border:1px solid var(--border-2);{% endif %}"></span>
+            <span class="settings-bucket-label">{{ b.label }}</span>
+            <span class="settings-bucket-count">{{ b.count }}</span>
+          </div>
+          <div class="settings-bucket-size">{{ '%.2f'|format(b.value) }} {{ b.unit }}</div>
+          {% if b.goto %}<span class="settings-bucket-open">{{ t.settings_open_label }}</span>{% endif %}
+        {% if b.goto %}</a>{% else %}</div>{% endif %}
+      {% endfor %}
+    </div>
+  </div>
+</div>

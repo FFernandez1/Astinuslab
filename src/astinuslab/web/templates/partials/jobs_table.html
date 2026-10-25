@@ -1,0 +1,126 @@
+<div
+  id="jobs-table"
+  hx-get="/jobs-table-fragment?page={{ jobs_page }}&amp;state={{ jobs_state }}"
+  hx-trigger="every 5s"
+  hx-swap="outerHTML"
+>
+  <div class="card-header">
+    <span class="section-label">{{ t.recent_jobs or "RECENT JOBS" }}</span>
+    <span class="count-badge">{{ jobs_total }}</span>
+  </div>
+  <nav class="row" aria-label="{{ t.jobs_filter_label }}">
+    {% for value, label in [('all', t.jobs_filter_all), ('active', t.jobs_filter_active), ('finished', t.jobs_filter_finished)] %}
+    <a id="jobs-filter-{{ value }}" href="/jobs?page=1&amp;state={{ value }}" class="wiz-btn {{ 'wiz-btn--primary' if jobs_state == value else 'wiz-btn--ghost' }}"{% if jobs_state == value %} aria-current="page"{% endif %}>{{ label }}</a>
+    {% endfor %}
+  </nav>
+  <nav class="row" aria-label="{{ t.jobs_page_label }}">
+    {% if jobs_page > 1 %}
+    <a id="jobs-previous" href="/jobs?page={{ jobs_page - 1 }}&amp;state={{ jobs_state }}" class="wiz-btn wiz-btn--ghost">{{ t.jobs_previous }}</a>
+    {% endif %}
+    <span id="jobs-page-range" class="text-muted small">{{ jobs_start }}–{{ jobs_end }} / {{ jobs_total }}</span>
+    {% if jobs_page < jobs_pages %}
+    <a id="jobs-next" href="/jobs?page={{ jobs_page + 1 }}&amp;state={{ jobs_state }}" class="wiz-btn wiz-btn--ghost">{{ t.jobs_next }}</a>
+    {% endif %}
+  </nav>
+  {% if jobs %}
+  <form id="bulk-delete-form" action="/jobs/bulk-delete" method="post">
+    {% include "partials/csrf_input.html" %}
+    <div class="row row--end jobs-table__bulk-actions">
+      <button
+        id="jobs-bulk-delete"
+        type="button"
+        class="wiz-btn wiz-btn--ghost button-danger-text"
+        data-open-bulk-delete-modal
+      >
+        {{ t.btn_delete_selected }}
+      </button>
+    </div>
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th class="w-2rem">
+              <input
+                id="jobs-select-all"
+                type="checkbox"
+                data-toggle-all=".job-select"
+                aria-label="{{ t.select_all or 'Select all' }}"
+              />
+            </th>
+            <th>{{ t.col_id }}</th>
+            <th>{{ t.col_target }}</th>
+            <th>{{ t.col_scenario }}</th>
+            <th>{{ t.col_status }}</th>
+            <th>{{ t.col_created }}</th>
+            <th class="w-3rem"></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for job in jobs %}
+          <tr id="job-row-{{ job.id }}">
+            <td>
+              <input
+                id="job-select-{{ job.id }}"
+                type="checkbox"
+                class="job-select"
+                name="job_ids"
+                value="{{ job.id }}"
+                aria-label="{{ t.select_job or 'Select job' }} {{ job.id[:8] }}"
+                {%
+                if
+                job.status
+                in
+                active_statuses
+                %}disabled
+                aria-disabled="true"
+                title="{{ t.title_active_job }}"
+                {%
+                endif
+                %}
+              />
+            </td>
+            <td>
+              <a id="job-open-{{ job.id }}" href="/jobs/{{ job.id }}" class="mono">{{ job.id[:8] }}</a>
+              {% if job.status in active_statuses %}
+              <span class="spinner" aria-hidden="true"></span>
+              <span class="sr-only">{{ t.title_active_job }}</span>
+              {% endif %}
+            </td>
+            <td class="small">{{ job.target_id }}</td>
+            <td class="text-muted small">
+              {{ job.scenario_id }} {% if job.workload_id %}
+              <br /><span class="badge badge-workload mt-1">{{ job.workload_id }}</span>
+              {% endif %}
+            </td>
+            <td>
+              <span class="badge badge-{{ job.status }} badge--xs"
+                >{% include "partials/job_status_label.html" %}</span
+              >
+              {% include "partials/job_capacity_reason.html" %}
+            </td>
+            <td class="text-muted small nowrap">{{ job.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+            <td>
+              {% if job.status not in active_statuses %}
+              <button
+                id="job-delete-{{ job.id }}"
+                type="button"
+                data-delete-job-id="{{ job.id }}"
+                data-delete-job-row="#job-row-{{ job.id }}"
+                class="wiz-btn wiz-btn--danger wiz-btn--xs"
+                aria-label="{{ t.aria_delete_job }} {{ job.id[:8] }}"
+              >
+                ✕
+              </button>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </form>
+
+  {% include "partials/delete_job_modal.html" %} {% else %}
+  <p class="empty-state">{{ t.no_jobs }}</p>
+  {% endif %}
+</div>

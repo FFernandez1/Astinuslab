@@ -1,0 +1,323 @@
+[project]
+name = "astinuslab"
+version = "1.0.0"
+description = "AstinusLab — attack-and-forensics playground: vulnerable labs, attacker VMs and memory/disk capture on a local KVM/libvirt host"
+readme = "README.md"
+license = "LicenseRef-Volatility-Software-License-1.0"
+authors = [{ name = "Francisco Fernandez" }]
+keywords = ["forensics", "memory-forensics", "volatility", "kvm", "libvirt", "security-lab", "incident-response"]
+classifiers = [
+  "Environment :: Web Environment",
+  "Framework :: FastAPI",
+  "Intended Audience :: Education",
+  "Intended Audience :: Information Technology",
+  "Intended Audience :: Science/Research",
+  "Operating System :: POSIX :: Linux",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Topic :: Security",
+  "Topic :: System :: Systems Administration",
+]
+license-files = [
+  "LICENSE",
+  "THIRD_PARTY_NOTICES.md",
+  "LICENSES/*",
+]
+# install.sh enforces 3.12+ at deployment time; keep this in sync.
+requires-python = ">=3.12"
+dependencies = [
+  "fastapi>=0.115.0",
+  "uvicorn>=0.30.0",
+  "sqlalchemy>=2.0.0",
+  "alembic>=1.18.4",
+  "pydantic>=2.8.0",
+  "pyyaml>=6.0.0",
+  "jinja2>=3.1.0",
+  "markdown-it-py>=4.0",
+  "python-multipart>=0.0.9",
+  "celery>=5.3",
+  "libvirt-python>=10.0.0",
+  # PEP 440 ordering for the Volatility readiness floor.  String comparison sorts
+  # "2.9.0" above "2.28.0"; packaging.version.Version does not.
+  "packaging>=24.0",
+  "cryptography>=42.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+  "build==1.3.0",
+  "pytest>=8.0",
+  "pytest-asyncio>=1.0",
+  "pytest-cov>=5.0",
+  "pytest-playwright>=0.5.0",
+  "httpx>=0.27",
+  "httpx2>=2.0",
+  "ruff>=0.8.0",
+  "mypy>=1.13.0",
+  "types-PyYAML>=6.0.0",
+  "pytest-timeout>=2.3.0",
+]
+docs = [
+  "mkdocs-material>=9.7.7",
+  "mkdocs-static-i18n>=1.2",
+  "pymdown-extensions>=11.0.1",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests/python"]
+# Stage C joins several test roots that already contain duplicate basenames.
+# Import by path instead of package name before the first move.
+addopts = ["--import-mode=importlib"]
+consider_namespace_packages = true
+asyncio_mode = "auto"
+# Fail (with a traceback) instead of hanging the whole CI job if a test blocks
+# on an external resource (e.g. libvirt/virsh/ssh absent on CI runners).
+timeout = 120
+# Warnings are errors, so a deprecation cannot sit in the summary accumulating
+# copies until the release it becomes a removal. Each ignore below names the one
+# warning it silences and why the suite cannot act on it from here; add a new
+# entry only with the same justification, and prefer fixing the call site.
+filterwarnings = [
+  "error",
+  # Starlette deprecates per-request `cookies=`. The CSRF and session tests pass
+  # a different jar per request deliberately: setting cookies on the client
+  # instead would persist a token across requests, which is exactly what the
+  # rotation and mismatch cases have to avoid.
+  "ignore:Setting per-request cookies:DeprecationWarning",
+  # SQLAlchemy cannot reflect the partial unique index that keeps one playground
+  # session active. The migration tests reflect whole tables to prove an upgrade
+  # preserved them; the index itself is asserted directly elsewhere.
+  "ignore:Skipped unsupported reflection of expression-based index:sqlalchemy.exc.SAWarning",
+  # ResourceWarning fires when the garbage collector finalises an unclosed file
+  # or socket, which is not when the leak happened: as an error it fails
+  # whichever test happened to be running at collection time, so the report
+  # names an innocent test and moves between runs. Known open leaks are the
+  # local HTTP/TCP servers in tests/python/lab_packages. Fix those at the source; do
+  # not make the symptom fatal at an arbitrary distance from the cause.
+  "ignore::ResourceWarning",
+  "ignore::pytest.PytestUnraisableExceptionWarning",
+]
+markers = [
+  "unit: pure function, service, repository, script, or docs-theme tests",
+  "api: FastAPI TestClient route/API contract tests",
+  "ui: server-rendered HTML route/template tests",
+  "integration: safe local integration tests with isolated process, DB, or fake backend dependencies",
+  "e2e: explicit end-to-end tests that may need browser/server/full-stack setup",
+  "host: shell, installer, launcher, or host-helper tests using subprocess/fake binaries",
+  "host_real: end-to-end tests requiring a real libvirt/KVM host (opt-in via ASTINUSLAB_REAL_HOST=1)",
+  "slow: safe but longer-running tests",
+]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 120
+extend-exclude = [
+  "/storage",
+  "/site",
+  "/vol3/symbols",
+]
+
+[tool.ruff.lint]
+# E9 — syntax errors
+# F  — pyflakes (unused imports, undefined names)
+# I  — isort (import ordering)
+# UP — pyupgrade (modern Python syntax)
+# B  — bugbear (likely bugs)
+# S  — bandit (security); see per-rule ignores below
+# C901 — cyclomatic complexity; see the mccabe ratchet below
+select = ["E9", "F", "I", "UP", "B", "S", "C901"]
+ignore = [
+    # FastAPI's Depends()/Form()/Query() in defaults is the framework idiom.
+    "B008",
+    # The product's job is to drive virsh/qemu-img/ssh.  Every call site is
+    # list-form (no shell=True anywhere — verified).  S603/S607 cannot be
+    # satisfied, only silenced, so silence them once here rather than 41 times.
+    "S603",
+    "S607",
+    # try/except/pass: all remaining sites are best-effort cleanup in finally
+    # blocks or diagnostic enrichment whose failure is already logged upstream.
+    # Audited 2026-07-09.
+    "S110",
+]
+
+[tool.ruff.lint.mccabe]
+# A ratchet, not a target: the bound is the complexity of the single worst
+# function in the tree, so nothing new may be worse than what is already worst,
+# and no existing code has to be rewritten to turn the rule on.
+#
+# Was 69, for `playground/reconciliation.py::reconcile_libvirt_resources`. That
+# function is now nine phase functions and no longer the worst -- so the bound
+# comes down to 62, which is `orchestration/deps.py::default`. Lower it again
+# each time the current worst is dealt with; that is the whole mechanism.
+max-complexity = 62
+
+[tool.ruff.lint.per-file-ignores]
+# Bandit (S) and bugbear (B) target production code.  Test code legitimately
+# uses assert (S101), temp files (S108), bind-all (S104), hardcoded fixture
+# creds (S106), urlopen (S310), blind pytest.raises(Exception) (B017), etc.
+# Exempt the whole S/B groups for tests rather than chase each fixture; the
+# rules stay fully in force for src/astinuslab.
+"tests/python/**" = ["S", "B"]
+"tests/**" = ["S", "B"]
+
+[tool.mypy]
+python_version = "3.12"
+namespace_packages = true
+explicit_package_bases = true
+mypy_path = "src"
+disable_error_code = []
+exclude = "^(storage|site|vol3/symbols|tests/python/tooling)/"
+
+# Strict flags that the whole tree already satisfies. Each was measured at zero
+# errors before being turned on, so none of them is aspirational -- they are
+# here to keep what is already true from regressing. The remaining strict flags
+# are not yet affordable tree-wide; their cost is tracked, and ratcheted down,
+# by tests/python/tooling/test_mypy_strictness.py.
+check_untyped_defs = true
+no_implicit_optional = true
+warn_redundant_casts = true
+strict_equality = true
+extra_checks = true
+disallow_subclassing_any = true
+# Was false, with twelve stale `# type: ignore` comments behind it. A
+# suppression that no longer suppresses anything is worse than none: it reads
+# as a known problem and hides the next real one on that line.
+warn_unused_ignores = true
+
+# Third-party modules without type stubs or a py.typed marker.  libvirt ships
+# no stubs at all; celery and its kombu transport dependency have no bundled
+# typing metadata.  Scope the missing-import suppression here instead of globally so
+# that genuinely missing imports elsewhere are still caught.
+[[tool.mypy.overrides]]
+module = ["libvirt", "celery.*", "kombu"]
+ignore_missing_imports = true
+
+# celery.beat.PersistentScheduler is Any for the same reason: celery ships no
+# typing metadata. Subclassing it is the documented extension point, so this is
+# the one place the tree-wide disallow_subclassing_any cannot hold.
+[[tool.mypy.overrides]]
+module = "astinuslab.jobs.beat_scheduler"
+disallow_subclassing_any = false
+
+# Per-module strictness, ahead of what the tree as a whole can carry. Each
+# module here is already clean under the flags it lists, so the entry locks
+# that in rather than describing an intention. `no_implicit_optional` used to
+# be repeated in both blocks and is now global, so it is gone from here.
+#
+# Add a module when it reaches zero errors under the flag, and promote it into
+# the stricter block below when it reaches zero under that one. The tree-wide
+# remainder is counted in tests/python/tooling/test_mypy_strictness.py, which
+# fails if it grows -- so moving a module up here shows there as a drop.
+[[tool.mypy.overrides]]
+module = [
+    "astinuslab.db.repositories",
+    "astinuslab.jobs.job_services",
+    "astinuslab.forensics.services",
+    "astinuslab.forensics.case_services",
+    "astinuslab.core.security",
+]
+warn_return_any = true
+
+# Clean under disallow_untyped_defs as well as the flag above.
+[[tool.mypy.overrides]]
+module = [
+    "astinuslab.jobs.job_status",
+    "astinuslab.core.locks",
+    "astinuslab.storage.artifacts",
+    "astinuslab.core.fake_mode",
+]
+warn_return_any = true
+disallow_untyped_defs = true
+
+# Per-module overrides for files where the remaining disabled codes are false
+# positives or would require invasive refactoring disproportionate to the value.
+[[tool.mypy.overrides]]
+# SQLAlchemy's DefaultGenerator is a private internal type; its .arg attribute
+# exists at runtime but is not exposed in the public stubs.
+module = "astinuslab.db"
+disable_error_code = ["attr-defined"]
+
+[[tool.mypy.overrides]]
+# ScriptFetchMixin uses duck-typing: subclasses supply package_name() and
+# supports().  Mypy can't see these through the abstract mixin base.
+module = "astinuslab.forensics.symbols.providers"
+disable_error_code = ["attr-defined"]
+
+[[tool.mypy.overrides]]
+# __init__.py installs a fake libvirt module by setting attributes on a
+# dynamically-created ModuleType; mypy cannot see those attributes.
+module = "astinuslab"
+disable_error_code = ["attr-defined"]
+
+[[tool.mypy.overrides]]
+# conftest.py builds stub modules for libvirt and python-multipart at test
+# startup by assigning attributes onto dynamically created ModuleType objects.
+# These are intentional; suppressing attr-defined here is correct.
+module = "tests.python.conftest"
+disable_error_code = ["attr-defined"]
+
+[tool.coverage.report]
+fail_under = 86
+precision = 1
+show_missing = true
+skip_empty = true
+
+# `uv export` writes its own invocation into each lockfile header and its
+# formatting is not guaranteed stable across uv releases, so the regenerate-and-
+# diff gate in the dependency-audit CI job needs everyone on the same uv. uv
+# enforces this itself and refuses to run on a mismatch.
+[tool.uv]
+required-version = "==0.11.16"
+
+[tool.coverage.run]
+# Alembic executes these packaged scripts in migration subprocesses. Keep the
+# application ratchet comparable to the pre-src-layout baseline, when the same
+# scripts lived outside the measured package tree.
+omit = ["src/astinuslab/migrations/*"]
+# Branch coverage, not just line coverage. This product is dense in guard
+# clauses -- traversal refusals, fake-mode refusals, capacity deferrals, ACL
+# ownership checks -- and a guard whose body is never taken still counts as a
+# covered line. Measuring arcs dropped the reported figure by 2.4 points the
+# day it was switched on, which is the size of the gap line coverage was
+# hiding. `fail_under` below was reset to the measured value; ratchet it.
+branch = true
+
+[build-system]
+requires = ["setuptools>=77", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["astinuslab*"]
+
+[tool.setuptools.package-data]
+"astinuslab.virtualization" = ["windows_assets/*.cs", "windows_assets/*.ps1", "windows_assets/*.json"]
+"astinuslab.migrations" = ["alembic.ini", "script.py.mako"]
+"astinuslab.web" = [
+    "templates/*.html",
+    "templates/partials/*.html",
+    "static/*.js",
+    "static/package.json",
+    "static/css/*.css",
+    "static/css/pages/*.css",
+    "static/fonts/*.woff2",
+    "static/lib/*.js",
+    "static/playground/*.js",
+    "static/packages/*.js",
+    "static/volatility/*.js",
+]
+
+# Published guide sources remain available in wheel-only installations.
+[tool.setuptools.data-files]
+"share/astinuslab/docs" = ["docs/index*.md", "docs/LICENSE*.md", "docs/THIRD_PARTY_NOTICES*.md"]
+"share/astinuslab/docs/user" = ["docs/user/*.md"]
+"share/astinuslab/docs/usage" = ["docs/usage/*.md"]
+"share/astinuslab/docs/reference" = ["docs/reference/*.md"]
+"share/astinuslab/docs/api" = ["docs/api/*.md"]
+"share/astinuslab/docs/architecture" = ["docs/architecture/*.md"]
+"share/astinuslab/docs/development" = ["docs/development/*.md"]
+"share/astinuslab/docs/community" = ["docs/community/*.md"]

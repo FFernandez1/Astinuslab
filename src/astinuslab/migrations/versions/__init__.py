@@ -1,0 +1,1 @@
+"""AstinusLab Alembic revision history."""

@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="{{ lang }}">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="astinuslab-csrf-token" content="{{ csrf_token }}">
+  <title>{% block title %}AstinusLab{% endblock %}</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Cpath d='M4 8L4 4L12 4M28 4L36 4L36 8M4 32L4 36L12 36M28 36L36 36L36 32' stroke='%233ecf7a' stroke-width='1.5' stroke-linecap='square' fill='none'/%3E%3Cpath d='M11 28L20 12L29 28M14.5 22L25.5 22' stroke='%23e8eaed' stroke-width='2' stroke-linecap='square' fill='none'/%3E%3C/svg%3E">
+  {# Preload the two faces every page paints first; the rest load on demand. #}
+  <link rel="preload" href="/static/fonts/InterVariable.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/static/fonts/JetBrainsMono-Regular.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="/static/css/tokens.css?v={{ asset_v }}">
+  <link rel="stylesheet" href="/static/css/layout.css?v={{ asset_v }}">
+  <link rel="stylesheet" href="/static/css/components.css?v={{ asset_v }}">
+  {% block head %}{% endblock %}
+  <script src="/static/htmx.min.js?v={{ asset_v }}"></script>
+  <script type="module" src="/static/csrf.js?v={{ asset_v }}"></script>
+  {# Export every page workflow key plus an explicit misc set to the client. #}
+  {% set al_i18n_extra = ["btn_copy", "btn_cancel", "btn_confirm", "htmx_error", "htmx_network_error"] %}
+  {% set al_i18n_ns = namespace(d={}) %}
+  {% for k, v in t.items() %}
+    {% if k.startswith('pg_') or k.startswith('pkg_') or k.startswith('vol_') or k.startswith('logs_') or k.startswith('job_') or k in al_i18n_extra %}
+      {% set _ = al_i18n_ns.d.update({k: v}) %}
+    {% endif %}
+  {% endfor %}
+  <script id="al-i18n" type="application/json" nonce="{{ request.state.csp_nonce }}">{{ al_i18n_ns.d | tojson | safe }}</script>
+  <script src="/static/i18n.js?v={{ asset_v }}"></script>
+  <script src="/static/dialog.js?v={{ asset_v }}"></script>
+  <script src="/static/confirm-dialog.js?v={{ asset_v }}" defer></script>
+  <script src="/static/toast.js?v={{ asset_v }}" defer></script>
+  <script src="/static/init.js?v={{ asset_v }}"></script>
+</head>
+<body class="al-root{% block body_class %}{% endblock %}">
+  <a class="skip-link" href="#main-content">{{ t.skip_to_content or "Skip to main content" }}</a>
+  {# data-inert-exempt: dialog.js inerts the background, and this region must keep
+     announcing through an open modal. #}
+  <div id="al-toast-root" class="toast-root" aria-live="assertive" aria-atomic="false" data-inert-exempt></div>
+  <div class="shell">
+
+    {# ── Sidebar ── #}
+    {% set path = request.url.path %}
+    <nav class="sidebar">
+      <div class="sidebar-header-row">
+        <a class="sidebar-logo sidebar-logo--inline" href="/playground" aria-label="AstinusLab Playground">
+          <svg viewBox="0 0 40 40" width="22" height="22" fill="none" aria-hidden="true">
+            <path d="M4 8L4 4L12 4M28 4L36 4L36 8M4 32L4 36L12 36M28 36L36 36L36 32" stroke="var(--primary)" stroke-width="1.5" stroke-linecap="square"/>
+            <path d="M11 28L20 12L29 28M14.5 22L25.5 22" stroke="var(--text)" stroke-width="2" stroke-linecap="square"/>
+          </svg>
+          <span class="sidebar-logo__name">AstinusLab</span>
+        </a>
+        <button class="theme-toggle" type="button" aria-label="Toggle theme" aria-pressed="false" title="Toggle Light/Dark Mode" data-theme-toggle>
+          <svg class="theme-icon-sun" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+          <svg class="theme-icon-moon" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+        </button>
+        <button class="sidebar-menu-toggle" type="button" aria-controls="sidebar-links" aria-expanded="false">{{ t.nav_menu }}</button>
+      </div>
+
+      <div class="sidebar-links" id="sidebar-links">
+      <div class="sidebar-section">
+        <div class="sidebar-eyebrow">workspace</div>
+
+        <a href="/playground" class="sidebar-item{% if path.startswith('/playground') %} sidebar-item--active{% endif %}"{% if path.startswith('/playground') %} aria-current="page"{% endif %}>
+          <svg class="sidebar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="square">
+            <path d="M12 2l2 7h7l-5.5 4 2 7L12 16l-5.5 4 2-7L3 9h7z"/>
+          </svg>
+          Playground
+        </a>
+
+        <a href="/jobs" class="sidebar-item{% if path == '/jobs' or path.startswith('/jobs/') %} sidebar-item--active{% endif %}"{% if path == '/jobs' or path.startswith('/jobs/') %} aria-current="page"{% endif %}>
+          <svg class="sidebar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="square">
+            <rect x="4" y="4" width="6" height="6"/><rect x="14" y="4" width="6" height="6"/>
+            <rect x="4" y="14" width="6" height="6"/><rect x="14" y="14" width="6" height="6"/>
+          </svg>
+          {{ t.nav_jobs or "Jobs" }}
+        </a>
+
+        <a href="/volatility" class="sidebar-item{% if path.startswith('/volatility') %} sidebar-item--active{% endif %}"{% if path.startswith('/volatility') %} aria-current="page"{% endif %}>
+          <svg class="sidebar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="square">
+            <path d="M4 19h16M7 16l3-10h4l3 10M9 12h6"/>
+          </svg>
+          {{ t.nav_volatility or "Volatility" }}
+        </a>
+
+        <a href="/images" class="sidebar-item{% if path.startswith('/images') %} sidebar-item--active{% endif %}"{% if path.startswith('/images') %} aria-current="page"{% endif %}>
+          <svg class="sidebar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="square">
+            <rect x="4" y="4" width="16" height="12" rx="1"/><path d="M8 20h8M12 16v4"/>
+          </svg>
+          {{ t.nav_images }}
+        </a>
+
+        <a href="/workloads" class="sidebar-item{% if path.startswith('/workloads') %} sidebar-item--active{% endif %}"{% if path.startswith('/workloads') %} aria-current="page"{% endif %}>
+          <svg class="sidebar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="square">
+            <path d="M12 3l9 5v8l-9 5-9-5V8z"/>
+          </svg>
+          {{ t.nav_workloads or "Workloads" }}
+        </a>
+
+        {% if packages_enabled %}
+        <a href="/packages" class="sidebar-item{% if path.startswith('/packages') %} sidebar-item--active{% endif %}"{% if path.startswith('/packages') %} aria-current="page"{% endif %}>
+          <svg class="sidebar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="square" aria-hidden="true">
+            <path d="M4 7h16v13H4zM8 7V4h8v3M8 11h8M8 15h5"/>
+          </svg>
+          {{ t.nav_packages }}
+        </a>
+        {% endif %}
+
+        <a href="/storage" class="sidebar-item{% if path.startswith('/storage') or path.startswith('/dumps') %} sidebar-item--active{% endif %}"{% if path.startswith('/storage') or path.startswith('/dumps') %} aria-current="page"{% endif %}>
+          <svg class="sidebar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="square">
+            <path d="M5 4h11l3 3v13H5z"/><path d="M9 10h6M9 14h6"/>
+          </svg>
+          {{ t.nav_storage }}
+        </a>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="sidebar-eyebrow">system</div>
+
+        <a href="/logs" class="sidebar-item{% if path.startswith('/logs') %} sidebar-item--active{% endif %}"{% if path.startswith('/logs') %} aria-current="page"{% endif %}>
+          <svg class="sidebar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="square">
+            <path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>
+          </svg>
+          {{ t.nav_logs }}
+        </a>
+
+        <a href="/ssh-keys" class="sidebar-item{% if path.startswith('/ssh-keys') %} sidebar-item--active{% endif %}"{% if path.startswith('/ssh-keys') %} aria-current="page"{% endif %}>
+          <svg class="sidebar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="square">
+            <circle cx="8" cy="14" r="4"/><path d="M14 10l2-2 2 2M18 8l2-2"/>
+          </svg>
+          {{ t.nav_ssh_keys }}
+        </a>
+
+        <a href="/settings" class="sidebar-item{% if path.startswith('/settings') %} sidebar-item--active{% endif %}"{% if path.startswith('/settings') %} aria-current="page"{% endif %}>
+          <svg class="sidebar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="square">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9c.3.6.9 1 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>
+          </svg>
+          {{ t.nav_settings }}
+        </a>
+      </div>
+
+      <div class="sidebar-footer">
+        <form action="/set-lang" method="post">
+          {% include "partials/csrf_input.html" %}
+          <input type="hidden" name="next" value="{{ request.url.path }}">
+          <select name="lang" data-lang-select class="lang-select" aria-label="Language">
+            {% for code, name in supported_langs.items() %}
+              <option value="{{ code }}" {% if code == lang %}selected{% endif %}>{{ name }}</option>
+            {% endfor %}
+          </select>
+        </form>
+      </div>
+      </div>
+    </nav>
+
+    {# ── Main area ── #}
+    <div class="shell-main">
+
+      {# ── Shell bar ── #}
+      <div class="eng-bar">
+        <div class="eng-bar__left">
+          <span class="section-label">AstinusLab</span>
+        </div>
+        <div class="eng-bar__right">
+          <span class="eng-bar__clock mono" id="utc-clock"></span>
+        </div>
+      </div>
+
+      <div class="shell-scroll-area">
+        <main class="container" id="main-content">
+          {% block content %}{% endblock %}
+        </main>
+      </div>
+    </div>
+
+  </div>
+  <script src="/static/globals.js?v={{ asset_v }}" defer></script>
+  <script src="/static/state_preservation.js?v={{ asset_v }}" defer></script>
+</body>
+</html>

@@ -1,0 +1,68 @@
+<div class="card card--compact">
+  <h2 class="card-title">{{ t.run_scripts_title }}</h2>
+
+  <form
+    hx-post="/jobs/{{ job.id }}/run-scripts"
+    hx-target="#script-exec-output"
+    hx-swap="innerHTML"
+    hx-encoding="multipart/form-data"
+    hx-indicator="#script-run-spinner"
+    hx-disabled-elt="find button"
+    class="mb-3"
+  >
+    <div class="form-group">
+      <label for="scripts-upload">{{ t.label_scripts_upload }}</label>
+      <div style="display:flex; align-items:center; gap:0.75rem; flex-wrap:wrap">
+        <label for="scripts-upload" class="file-label" style="
+          display:inline-flex; align-items:center; gap:0.4rem;
+          padding:0.45rem 0.9rem; background:var(--surface-2); border:1px dashed var(--border);
+          border-radius:var(--radius); cursor:pointer; font-size:var(--text-sm); font-weight:500;
+          color:var(--text); transition:background var(--transition-normal); white-space:nowrap
+        ">{{ t.btn_select_scripts }}</label>
+        <input
+          type="file"
+          id="scripts-upload"
+          name="scripts"
+          multiple
+          accept=".sh,.py,.bash,.rb,.pl,text/*"
+          class="sr-only"
+        >
+        <span
+          id="file-label"
+          class="text-muted small"
+          data-label-none="{{ t.no_file_selected }}"
+          data-label-many="{{ t.n_files_selected }}"
+        >{{ t.no_file_selected }}</span>
+      </div>
+      <div class="text-muted small form-hint">
+        {{ t.scripts_hint }}
+      </div>
+    </div>
+
+    <div style="display:flex; align-items:center; gap:1rem; flex-wrap:wrap">
+      <div style="display:flex; align-items:center; gap:0.5rem">
+        <label class="small">{{ t.label_timeout }}</label>
+        <input
+          type="number"
+          name="timeout"
+          value="60"
+          min="5"
+          max="600"
+          style="width:70px; padding:0.35rem 0.5rem; font-size:var(--text-sm)"
+        >
+        <span class="text-muted small">{{ t.seconds_unit }}</span>
+      </div>
+      <button type="submit" class="wiz-btn wiz-btn--secondary"
+              style="display:flex; align-items:center; gap:0.5rem; line-height:1">
+        <span id="script-run-spinner" class="htmx-indicator spinner"></span>
+        {{ t.btn_run }}
+      </button>
+    </div>
+  </form>
+
+  <div id="script-exec-output"></div>
+</div>
+{# No inline <script> here: this partial reloads through the #script-runner
+   htmx poll, so an inline script would carry the fragment response's CSP nonce
+   rather than the host page's and be blocked. The file-picker label is updated
+   from static/job-live.js, delegated on document. #}

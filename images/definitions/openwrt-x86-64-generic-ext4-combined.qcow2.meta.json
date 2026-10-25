@@ -1,0 +1,18 @@
+{
+  "arch": null,
+  "build_id": null,
+  "cloud_init_profile": null,
+  "default_username": "root",
+  "detected_at": "2026-06-14T05:47:49+00:00",
+  "distro": "openwrt",
+  "family": "other",
+  "inject_network_config": null,
+  "inspect_error": null,
+  "kernel_release": null,
+  "machine_type": null,
+  "os_variant": "generic",
+  "schema_version": 1,
+  "source": "filename",
+  "user_edited_fields": [],
+  "version": "unknown"
+}

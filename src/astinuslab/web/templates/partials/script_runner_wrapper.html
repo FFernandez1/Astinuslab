@@ -1,0 +1,17 @@
+<div
+  id="script-runner"
+  {% if poll %}
+  hx-get="/jobs/{{ job.id }}/script-runner-fragment"
+  hx-trigger="every 5s"
+  hx-swap="outerHTML"
+  {% endif %}
+>
+  {% if job.guest_ip %}
+    {% include "partials/script_runner.html" %}
+  {% else %}
+    <div class="card card--compact">
+      <h2 class="card-title">{{ t.run_scripts_title }}</h2>
+      <p class="text-muted small">{{ t.script_runner_waiting or "Available when the guest is reachable over SSH." }}</p>
+    </div>
+  {% endif %}
+</div>

@@ -1,0 +1,488 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Python ${{ matrix.python-version }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.12", "3.13"]
+
+    # CI runners have no libvirt daemon and only ship the *.example.yaml
+    # catalogs (the live *.yaml are gitignored). Use the in-process fake libvirt
+    # and point catalog loaders at the example files so the suite is hermetic.
+    env:
+      ASTINUSLAB_TARGETS_CATALOG_PATH: config/catalog/targets.example.yaml
+      ASTINUSLAB_SCENARIOS_CATALOG_PATH: config/catalog/scenarios.example.yaml
+      ASTINUSLAB_WORKLOADS_CATALOG_PATH: config/catalog/workloads.example.yaml
+      ASTINUSLAB_ATTACKERS_CATALOG_PATH: config/catalog/attackers.example.yaml
+      ASTINUSLAB_NETWORK_NODES_CATALOG_PATH: config/catalog/network_nodes.example.yaml
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install headers and required native test tools
+        run: |
+          sudo apt-get update
+          # fakeroot backs the AppArmor custody tests in tests/python/tooling: they stage a
+          # template owned by someone other than root, which a user namespace
+          # cannot do (chown there is EPERM against an init-namespace
+          # superblock). Named explicitly rather than leaned on as a runner
+          # default, because those tests skip when it is missing.
+          sudo apt-get install -y libvirt-dev pkg-config fakeroot acl qemu-utils pigz rsync curl shellcheck
+
+      - name: Prepare disposable CI identities and assert prerequisites
+        run: |
+          # These identities are ACL subjects only; no VM daemon is installed.
+          # Never run this setup on a developer's workstation.
+          getent group astinuslab || sudo groupadd --system astinuslab
+          getent passwd libvirt-qemu || sudo useradd --system --no-create-home --shell /usr/sbin/nologin libvirt-qemu
+          test "$(id -u)" -ne 0
+          for tool in setfacl getfacl qemu-img pigz rsync curl shellcheck fakeroot realpath bash; do
+            command -v "$tool"
+          done
+          getent group astinuslab
+          getent passwd libvirt-qemu
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements-dev.lock
+          python -m pip install -e . --no-deps
+
+      - name: Ruff
+        run: python -m ruff check .
+
+      - name: Ruff format check
+        run: python -m ruff format --check .
+
+      - name: Mypy
+        run: python -m mypy src tests/python ops/deploy
+
+      - name: Repository and topology check types
+        # The broad Mypy gate excludes tooling. Keep these maintained contracts
+        # checked explicitly without silently widening that historical boundary.
+        run: >-
+          python -m mypy
+          tests/python/tooling/test_mypy_strictness.py
+          tests/python/tooling/test_repository_hygiene.py
+          tests/python/tooling/test_test_topology.py
+
+      - name: Wheel-only package contract
+        run: python -m pytest tests/python/tooling/test_installed_artifact.py -q
+        env:
+          ASTINUSLAB_RUN_WHEEL_CONTRACT: "1"
+
+      - name: Initialize database schema
+        # A few tests exercise the real SQLite engine (settings.db_path); create
+        # the schema so they don't hit "no such table" on a clean runner.
+        run: python -m astinuslab.dbcli init
+
+      - name: Backend unit/API/service tests with coverage
+        run: >-
+          python -m pytest tests/python --cov=src/astinuslab --cov-fail-under=86
+          --cov-report=json:test-results/coverage.json
+          -q -ra --junitxml=test-results/backend.xml
+        env:
+          ASTINUSLAB_FAKE_LIBVIRT: "1"
+
+      - name: Per-module coverage floors
+        # The global --cov-fail-under above cannot see one module collapsing:
+        # a tenth of a point of total movement hides it. These modules fail
+        # silently when they break, so each carries its own floor.
+        run: python tools/quality/check_coverage_floors.py test-results/coverage.json
+
+      - name: Require backend host-tool tests (fake libvirt)
+        if: always()
+        run: python tools/quality/check_ci_test_report.py backend test-results/backend.xml
+
+      - name: Repository script/docs unit tests
+        run: python -m pytest tests/python/tooling -q -ra --junitxml=test-results/tooling.xml
+
+      - name: Require tooling native-tool coverage
+        if: always()
+        run: python tools/quality/check_ci_test_report.py tooling test-results/tooling.xml
+
+      - name: Generate HTML coverage
+        if: always()
+        run: python -m coverage html
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-${{ matrix.python-version }}
+          path: |
+            .coverage
+            htmlcov/
+            test-results/backend.xml
+            test-results/tooling.xml
+
+  docs:
+    name: Docs build
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      NO_MKDOCS_2_WARNING: "1"
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Set up locked docs resolver
+        uses: astral-sh/setup-uv@v5
+        with:
+          version: "0.11.16"
+
+      - name: Install docs dependencies
+        run: |
+          uv export --frozen --extra docs --no-dev --no-emit-project --no-hashes -o "$RUNNER_TEMP/docs-constraints.txt"
+          python -m pip install -c "$RUNNER_TEMP/docs-constraints.txt" mkdocs-material mkdocs-static-i18n
+
+      - name: Build docs (strict)
+        run: python -m mkdocs build -f docs/mkdocs.yml --strict
+
+  frontend:
+    name: Frontend Playwright
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install system headers
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libvirt-dev pkg-config
+
+      - name: Install backend dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements-dev.lock
+          python -m pip install -e . --no-deps
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Lint JavaScript
+        run: npm run lint:js
+
+      - name: Check formatting
+        run: npm run format:check
+
+      - name: Frontend unit tests
+        run: npm run test:js:unit
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      # Portable packages are disabled by default, and the two package specs in
+      # tests/browser/smoke/help.smoke.spec.js skip themselves when /packages
+      # returns 404 -- so the export consent gate had never actually run in CI.
+      # Enabling the feature here turns that skip into real coverage; the specs
+      # now fail instead of skipping when this variable is set and the page is
+      # still absent.
+      - name: Frontend UI smoke tests
+        run: npm run test:smoke
+        env:
+          ASTINUSLAB_PYTHON: ${{ env.pythonLocation }}/bin/python
+          ASTINUSLAB_PACKAGES_ENABLED: "true"
+
+      - name: Frontend backend integration tests
+        run: npm run test:integration
+        env:
+          ASTINUSLAB_PYTHON: ${{ env.pythonLocation }}/bin/python
+
+      # Fake-mode renderer tier: races between a stale reply and a newer
+      # selection, focus restoration across polls, and error/retry recovery in
+      # the Playground and Volatility workbenches. It has its own backend on
+      # port 8126 with a throwaway temp data dir.
+      - name: Frontend UI remediation tests
+        run: npm run test:remediation
+        env:
+          ASTINUSLAB_PYTHON: ${{ env.pythonLocation }}/bin/python
+
+      # Use the docs extra from the same resolution as application dependencies.
+      # Constraints avoid installing the runtime-only dependencies in the docs job.
+      - name: Set up locked docs resolver
+        uses: astral-sh/setup-uv@v5
+        with:
+          version: "0.11.16"
+
+      - name: Install docs dependencies
+        run: |
+          uv export --frozen --extra docs --no-dev --no-emit-project --no-hashes -o "$RUNNER_TEMP/docs-constraints.txt"
+          python -m pip install -c "$RUNNER_TEMP/docs-constraints.txt" mkdocs-material mkdocs-static-i18n
+
+      - name: Frontend docs tests
+        run: npm run test:docs
+        env:
+          ASTINUSLAB_PYTHON: ${{ env.pythonLocation }}/bin/python
+
+      - name: Install Python Playwright Chromium
+        run: python -m playwright install --with-deps chromium
+
+      - name: Backend e2e tests
+        run: python -m pytest tests/python/e2e -q
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          if-no-files-found: ignore
+
+  shell-boundary:
+    name: Shell and error-boundary gates
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install ShellCheck
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y shellcheck
+
+      # Both gates lint by glob, not by a hardcoded file list, so a script added
+      # under any of these directories is covered on its first CI run without
+      # editing this workflow. The five boundary-critical scripts stay named
+      # explicitly on the gate command lines (pinned by
+      # tests/python/tooling/test_playwright_config_catalogs.py); the globs cover the rest.
+      # tests/python/tooling/test_host_scripts.py enumerates the tree independently, via
+      # `git ls-files`, and fails if a tracked *.sh is neither matched by these
+      # globs nor listed in its INTENTIONALLY_UNLINTED tuple — so the coverage
+      # claim is checked against reality rather than against this same list.
+      - name: Check shell syntax
+        run: |
+          shopt -s globstar nullglob
+          SHELL_LINT_SCRIPTS=(
+            *.sh
+            tools/**/*.sh
+            guest/scripts/**/*.sh
+            guest/training/**/*.sh
+            guest/workloads/**/*.sh
+            ops/**/*.sh
+            tests/**/*.sh
+            vol3/scripts/**/*.sh
+          )
+          if (( ${#SHELL_LINT_SCRIPTS[@]} == 0 )); then
+            echo "shell lint globs matched no files" >&2
+            exit 1
+          fi
+          # `bash -n first.sh second.sh` parses only the first operand and turns
+          # the remaining ones into positional parameters, so every file needs
+          # its own invocation — both on the pinned line and in the glob sweep.
+          bash -n ops/deploy/install.sh; bash -n ops/deploy/uninstall.sh; bash -n ops/host/build_vol3_symbol_remote.sh; bash -n vol3/scripts/build_symbol_from_live_guest.sh; bash -n guest/scripts/build_vol3_symbol.sh
+          for script in "${SHELL_LINT_SCRIPTS[@]}"; do echo "bash -n: $script"; bash -n "$script"; done
+
+      - name: Run ShellCheck
+        run: |
+          shopt -s globstar nullglob
+          SHELL_LINT_SCRIPTS=(
+            *.sh
+            tools/**/*.sh
+            guest/scripts/**/*.sh
+            guest/training/**/*.sh
+            guest/workloads/**/*.sh
+            ops/**/*.sh
+            tests/**/*.sh
+            vol3/scripts/**/*.sh
+          )
+          if (( ${#SHELL_LINT_SCRIPTS[@]} == 0 )); then
+            echo "shell lint globs matched no files" >&2
+            exit 1
+          fi
+          # Every globbed script is ShellCheck-clean. There is no exemption list
+          # and adding one is a regression: a script that cannot pass belongs
+          # fixed, or annotated in place with a narrow `# shellcheck disable=`
+          # carrying a reason. tests/python/tooling/test_host_scripts.py fails if an
+          # exemption array reappears here.
+          printf 'ShellCheck: %s\n' "${SHELL_LINT_SCRIPTS[@]}"
+          shellcheck -f gcc ops/deploy/install.sh ops/deploy/uninstall.sh ops/host/build_vol3_symbol_remote.sh vol3/scripts/build_symbol_from_live_guest.sh guest/scripts/build_vol3_symbol.sh "${SHELL_LINT_SCRIPTS[@]}"
+
+      - name: Audit API error fields
+        run: python tools/quality/audit_error_fields.py
+
+  dependency-audit:
+    name: Dependency audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    # A separate job rather than a step in `backend`: the lockfiles do not vary
+    # by Python version, so running this inside the 3.12/3.13 matrix would audit
+    # the same two files twice and report every finding twice.
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          # Pinned deliberately. `uv export` writes its own invocation into each
+          # lockfile header and its formatting is not guaranteed stable across
+          # releases, so an unpinned uv would make the diff below flap on an
+          # unrelated uv upgrade. pyproject.toml's [tool.uv] required-version
+          # holds local checkouts to this exact version.
+          version: "0.11.16"
+
+      # Three properties, in dependency order. uv.lock must match
+      # pyproject.toml, or the exports below are faithful to a stale
+      # resolution -- which is exactly how starlette 1.0.0 reached CI while
+      # production shipped 1.3.1.
+      - name: Verify uv.lock matches pyproject.toml
+        run: uv lock --check
+
+      # Regenerated in place and diffed, rather than written to a temp path,
+      # because uv records the -o argument in the header: exporting elsewhere
+      # would differ on the header line alone. The flag order here must match
+      # the committed headers exactly; tests/python/tooling/test_dependency_audit_gate.py
+      # asserts that it does.
+      - name: Verify the lockfiles are exports of uv.lock
+        run: |
+          uv export --frozen --no-dev --no-emit-project -o requirements.lock
+          uv export --frozen --extra dev --no-emit-project -o requirements-dev.lock
+          git diff --exit-code -- requirements.lock requirements-dev.lock
+
+      - name: Install pip-audit
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install pip-audit
+
+      # Audit runtime, development and docs selections from the same resolution.
+      # Docs extras are absent from both committed requirements exports, so the
+      # temporary docs export must be audited explicitly as well as installed.
+      #
+      # --strict fails on a dependency pip-audit cannot resolve, so a lockfile
+      # entry that silently stops being auditable is a failure rather than a
+      # quiet pass.
+      #
+      # If an advisory lands with no fixed version available, add
+      # `--ignore-vuln <ID>` here with a comment naming the ID and the reason.
+      # Do not disable the step.
+      - name: Audit Python dependencies
+        run: |
+          pip-audit -r requirements.lock --strict --progress-spinner off
+          pip-audit -r requirements-dev.lock --strict --progress-spinner off
+          uv export --frozen --extra docs --no-dev --no-emit-project --no-hashes -o "$RUNNER_TEMP/docs-constraints.txt"
+          pip-audit -r "$RUNNER_TEMP/docs-constraints.txt" --strict --no-deps --disable-pip --progress-spinner off
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      # devDependencies only (eslint, prettier, playwright) — nothing here is
+      # served to a browser, so the bar is high/critical rather than every
+      # advisory in the transitive tree.
+      - name: Audit npm dependencies
+        run: npm audit --audit-level=high
+
+  secret-scan:
+    name: Secret scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      # fetch-depth: 0 is load-bearing, not a convenience. The history scope is
+      # the point of this job: deleting a credential from the tip does not
+      # unleak it, and a shallow clone would scan one commit and report PASS.
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      # Installed from the upstream release archive and checked against the
+      # SHA-256 published in gitleaks_${VERSION}_checksums.txt, rather than via
+      # a third-party action whose floating tag we would be trusting to scan
+      # this repository for secrets. Bumping the version means bumping the
+      # checksum here and the pin in tools/quality/secret_scan.py together.
+      - name: Install pinned Gitleaks
+        env:
+          GITLEAKS_VERSION: 8.30.1
+          GITLEAKS_SHA256: 551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb
+        run: |
+          set -euo pipefail
+          archive="gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          curl --fail --silent --show-error --location --retry 3 \
+            --output "${archive}" \
+            "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/${archive}"
+          echo "${GITLEAKS_SHA256}  ${archive}" | sha256sum --check --strict
+          tar -xzf "${archive}" gitleaks
+          sudo install -m 0755 gitleaks /usr/local/bin/gitleaks
+          rm -f gitleaks "${archive}"
+
+      - name: Verify secret gate failure and detection behavior
+        env:
+          ASTINUSLAB_TEST_GITLEAKS_BIN: /usr/local/bin/gitleaks
+        run: python tests/python/tooling/test_secret_scan.py
+
+      # The same command developers run locally, so CI and a contributor cannot
+      # disagree about what passed. It fails closed: a missing or wrong-version
+      # scanner exits 2 rather than reporting a clean scan, and findings are
+      # printed as rule/path/line only so a real leak is not copied into the
+      # public job log.
+      - name: Secret scan (tracked files and full history)
+        run: python tools/quality/secret_scan.py --scope all

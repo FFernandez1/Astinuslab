@@ -1,0 +1,393 @@
+{% import "partials/_guide_link.html" as guide %}
+<div id="live-section" data-job-id="{{ job.id }}"
+     data-reset-confirm="{{ t.confirm_reset_lab or 'Reset the lab VM to the clean snapshot?' }}"
+     data-cancel-confirm="{{ t.btn_cancel }}?">
+  {% set target_runtime  = (runtimes | selectattr('role', 'equalto', 'target')   | list | first) %}
+  {% set attacker_runtime = (runtimes | selectattr('role', 'equalto', 'attacker') | list | first) %}
+  {% set target_is_windows = target and ((target.family or '') | lower == 'windows') %}
+  {% include "partials/live_status.html" %}
+
+  {# ── VM Runtimes ── #}
+  {% if target_runtime or attacker_runtime %}
+    <div class="card">
+      <h2 class="card-title">{{ t.vm_runtimes_title or "VM runtimes" }}</h2>
+      <div class="auto-card-grid">
+        {% for runtime in [target_runtime, attacker_runtime] if runtime %}
+          {% set runtime_action = runtime_action_status.get(runtime.role) %}
+          <div class="vm-card">
+            <div class="vm-card__header">
+              <strong class="capitalize">{{ runtime.role }}</strong>
+              <span class="badge badge-{{ runtime.state }}">{{ runtime.state }}</span>
+              <span class="stage-label">{{ runtime.power_state }}</span>
+              {% if runtime_action %}
+                <span class="badge badge-{{ runtime_action }}">{{ runtime_action }}</span>
+              {% endif %}
+            </div>
+            <div class="mono small mb-1">{{ runtime.vm_name }}</div>
+            {% if runtime.ip_address %}
+              {% if job.status in ('waiting_for_capture', 'capture_requested', 'completed') %}
+                <div class="mono small mb-2">{{ runtime.ip_address }}</div>
+              {% else %}
+                <div class="mono small text-muted mb-2"><em>{{ t.ip_hidden_provisioning or "IP hidden during provisioning..." }}</em></div>
+              {% endif %}
+            {% endif %}
+            <div class="vm-card__actions">
+              {# Controls follow the same phase policy the service enforces, and stay
+                 disabled while this role already has a queued or running action. #}
+              {% set _btns_disabled = not can_control_runtime or runtime_action %}
+              {% if runtime.power_state == 'paused' %}
+                <form action="/jobs/{{ job.id }}/runtimes/{{ runtime.role }}/reboot" method="post">
+                  {% include "partials/csrf_input.html" %}
+                  <button type="submit" class="wiz-btn wiz-btn--secondary" {% if _btns_disabled %}disabled{% endif %}>{{ t.btn_reboot or "Reboot" }}</button>
+                </form>
+              {% elif runtime.power_state == 'on' %}
+                <form action="/jobs/{{ job.id }}/runtimes/{{ runtime.role }}/reboot" method="post">
+                  {% include "partials/csrf_input.html" %}
+                  <button type="submit" class="wiz-btn wiz-btn--secondary" {% if _btns_disabled %}disabled{% endif %}>{{ t.btn_reboot or "Reboot" }}</button>
+                </form>
+                <form action="/jobs/{{ job.id }}/runtimes/{{ runtime.role }}/shutdown" method="post">
+                  {% include "partials/csrf_input.html" %}
+                  <button type="submit" class="wiz-btn wiz-btn--secondary" {% if _btns_disabled %}disabled{% endif %}>{{ t.btn_shutdown or "Shutdown" }}</button>
+                </form>
+              {% endif %}
+            </div>
+            {% if runtime.role == 'target' %}
+              <div class="vm-card__meta">
+                {{ t.capture_memory_enabled or "Capture memory" }}: {{ t.exists_yes if runtime.capture_memory_enabled else t.exists_no }} ·
+                {{ t.capture_disk_enabled or "Capture disk" }}: {{ t.exists_yes if runtime.capture_disk_enabled else t.exists_no }}
+              </div>
+            {% endif %}
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  {% endif %}
+
+  {# ── Lab panel (workload active) ── #}
+  {% if job.status == 'waiting_for_capture' and workload %}
+    <div class="card card--lab">
+      <div class="flex mb-3">
+        <h2 class="card-title">
+          {{ t.lab_panel_title or "Active Lab" }} — {{ workload.display_name }}
+        </h2>
+        {% if job.network_isolated %}
+          <span class="badge badge-isolated" title="{{ t.network_isolated_hint }}">
+            🔒 {{ t.network_isolated_badge or "Network isolated" }}
+          </span>
+        {% endif %}
+      </div>
+
+      {% if job.lab_url %}
+        <div class="services-panel">
+          <div class="services-panel__title">{{ t.lab_services_title or "Services" }}</div>
+          {% for svc in workload.services %}
+            <div class="services-panel__row">
+              <strong>{{ svc.name }}</strong> &nbsp;·&nbsp;
+              <span class="services-panel__addr">{{ job.guest_ip }}:{{ svc.port }}</span>
+              &nbsp;·&nbsp;
+              <a href="http://{{ job.guest_ip }}:{{ svc.port }}{{ svc.url_path or '/' }}"
+                 target="_blank" class="services-panel__link">
+                http://{{ job.guest_ip }}:{{ svc.port }}{{ svc.url_path or '/' }}
+              </a>
+              {% if svc.credentials %}
+                &nbsp;·&nbsp;
+                <span class="services-panel__creds">
+                  {{ svc.credentials.user }} / {{ svc.credentials.password }}
+                </span>
+              {% endif %}
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+
+      {% if target_runtime and target_runtime.ip_address and target_runtime.power_state == 'on' %}
+        {% set ssh_user = target.default_username if target else 'ubuntu' %}
+        <div class="ssh-block ssh-block--target">
+          <div class="ssh-block__label">{{ t.lab_ssh_target or "SSH (target)" }}</div>
+          <div class="ssh-block__cmd">ssh -i {{ active_ssh_key }} {{ ssh_user }}@{{ target_runtime.ip_address }}</div>
+          <button class="btn-copy" type="button" data-copy-ssh>{{ t.btn_copy or "Copy" }}</button>
+        </div>
+      {% endif %}
+
+      {% if attacker_runtime and attacker_runtime.ip_address and attacker_runtime.state != 'ssh_unavailable' and attacker_runtime.power_state == 'on' %}
+        <div class="ssh-block ssh-block--attacker">
+          <div class="ssh-block__label">{{ t.attacker_ssh_label or "Attacker SSH" }}</div>
+          <div class="ssh-block__cmd">ssh -i {{ active_ssh_key }} {{ attacker_username }}@{{ attacker_runtime.ip_address }}</div>
+          <button class="btn-copy" type="button" data-copy-ssh>{{ t.btn_copy or "Copy" }}</button>
+        </div>
+      {% elif attacker_runtime and attacker_runtime.ip_address %}
+        <div class="ssh-block ssh-block--error">
+          <div class="ssh-block__label">{{ t.attacker_ssh_unavailable or "Attacker SSH unavailable" }}</div>
+          <div class="ssh-block__cmd">
+            {{ t.attacker_ssh_unavailable_hint or "The VM has an IP address but SSH is refusing connections. Check the guest image, username, or SSH service." }} ({{ attacker_runtime.ip_address }})
+          </div>
+        </div>
+      {% endif %}
+
+      {% if job.started_at %}
+        <div class="small mb-sm text-success">
+          {{ t.lab_running_since or "Running since" }}: <strong>{{ job.started_at.strftime('%H:%M UTC') }}</strong>
+        </div>
+      {% endif %}
+      <div class="workload-reset-panel">
+        <p class="text-muted small mb-sm">{{ t.lab_reset_hint or "Reset Lab to restore a clean install state between exploit attempts." }}</p>
+        {% if job.lab_snapshot_name %}
+          <button type="button" id="btn-reset-lab-{{ job.id }}"
+                  class="wiz-btn wiz-btn--secondary">{{ t.btn_reset_lab or "Reset Lab" }}</button>
+        {% else %}
+          <div class="text-muted small">{{ t.lab_reset_unavailable or "Reset is not available for this lab yet because no clean snapshot has been created." }}</div>
+        {% endif %}
+      </div>
+
+      <form action="/jobs/{{ job.id }}/acquire-memory-dump" method="post">
+        {% include "partials/csrf_input.html" %}
+        <div class="flex gap-sm">
+          <button type="submit" name="capture_type" value="memory" class="wiz-btn wiz-btn--primary"
+                  {% if target_runtime and target_runtime.power_state == 'off' %}disabled{% endif %}>
+            {{ t.capture_memory_label or "Capture memory" }}
+          </button>
+          <button type="submit" name="capture_type" value="disk" class="wiz-btn wiz-btn--secondary">{{ t.capture_disk_label or "Capture disk" }}</button>
+          <button type="submit" name="capture_type" value="both" class="wiz-btn wiz-btn--secondary"
+                  {% if target_runtime and target_runtime.power_state == 'off' %}disabled{% endif %}>
+            {{ t.capture_both_label or "Capture both" }}
+          </button>
+          <button type="button" id="btn-cancel-lab-{{ job.id }}"
+                  class="wiz-btn wiz-btn--danger">{{ t.btn_cancel }}</button>
+        </div>
+      </form>
+      <form id="cancel-{{ job.id }}" action="/jobs/{{ job.id }}/cancel" method="post" hidden>
+        {% include "partials/csrf_input.html" %}</form>
+    </div>
+
+  {# ── Manual capture trigger (no workload) ── #}
+  {% elif job.status == 'waiting_for_capture' %}
+    <div class="card card--info">
+      <h2 class="card-title">{{ t.waiting_capture_title }}</h2>
+
+      {% if target_runtime and target_runtime.ip_address and target_runtime.power_state == 'on' %}
+        {% set ssh_user = target.default_username if target else 'ubuntu' %}
+        <div class="ssh-block ssh-block--info">
+          <div class="ssh-block__label">{{ t.ssh_access_label }}</div>
+          <div class="ssh-block__cmd">ssh -i {{ active_ssh_key }} {{ ssh_user }}@{{ target_runtime.ip_address }}</div>
+          <button class="btn-copy" type="button" data-copy-ssh>{{ t.btn_copy or "Copy" }}</button>
+          <div class="ssh-block__meta">
+            {{ t.ip_label }}: <strong>{{ target_runtime.ip_address }}</strong>
+            &nbsp;·&nbsp;
+            {{ t.user_label }}: <strong>{{ ssh_user }}</strong>
+          </div>
+        </div>
+      {% else %}
+        <p class="text-muted small mb-sm">{{ t.getting_guest_ip }}</p>
+      {% endif %}
+
+      {% if attacker_runtime and attacker_runtime.ip_address and attacker_runtime.state != 'ssh_unavailable' and attacker_runtime.power_state == 'on' %}
+        <div class="ssh-block ssh-block--attacker mt-3">
+          <div class="ssh-block__label">{{ t.attacker_ssh_label or "Attacker SSH" }}</div>
+          <div class="ssh-block__cmd">ssh -i {{ active_ssh_key }} {{ attacker_username }}@{{ attacker_runtime.ip_address }}</div>
+          <button class="btn-copy" type="button" data-copy-ssh>{{ t.btn_copy or "Copy" }}</button>
+          <div class="ssh-block__meta">
+            {{ t.ip_label }}: <strong>{{ attacker_runtime.ip_address }}</strong>
+            &nbsp;·&nbsp;
+            {{ t.user_label }}: <strong>{{ attacker_username }}</strong>
+          </div>
+        </div>
+      {% elif attacker_runtime and attacker_runtime.ip_address %}
+        <div class="ssh-block ssh-block--error mt-3">
+          <div class="ssh-block__label">{{ t.attacker_ssh_unavailable or "Attacker SSH unavailable" }}</div>
+          <div class="ssh-block__cmd">
+            {{ t.attacker_ssh_unavailable_hint or "The VM has an IP address but SSH is refusing connections. Check the guest image, username, or SSH service." }} ({{ attacker_runtime.ip_address }})
+          </div>
+        </div>
+      {% endif %}
+
+      <p class="text-muted small mb-sm">{{ t.manual_activity_hint }}</p>
+      <form action="/jobs/{{ job.id }}/acquire-memory-dump" method="post">
+        {% include "partials/csrf_input.html" %}
+        <div class="flex gap-sm">
+          <button type="submit" name="capture_type" value="memory" class="wiz-btn wiz-btn--primary"
+                  {% if target_runtime and target_runtime.power_state == 'off' %}disabled{% endif %}>
+            {{ t.capture_memory_label or "Capture memory" }}
+          </button>
+          <button type="submit" name="capture_type" value="disk" class="wiz-btn wiz-btn--secondary">{{ t.capture_disk_label or "Capture disk" }}</button>
+          <button type="submit" name="capture_type" value="both" class="wiz-btn wiz-btn--secondary"
+                  {% if target_runtime and target_runtime.power_state == 'off' %}disabled{% endif %}>
+            {{ t.capture_both_label or "Capture both" }}
+          </button>
+        </div>
+      </form>
+    </div>
+  {% endif %}
+
+  {# ── Retry (failed) ── #}
+  {% if job.status == 'failed' %}
+    <div class="card card--error">
+      <h2 class="card-title">{{ t.job_failed_title }}</h2>
+      <p class="text-muted small mb-sm">{{ t.retry_hint }}</p>
+      <form action="/jobs/{{ job.id }}/retry" method="post">
+        {% include "partials/csrf_input.html" %}
+        <button type="submit" class="wiz-btn wiz-btn--primary">{{ t.btn_retry }}</button>
+      </form>
+    </div>
+  {% endif %}
+
+  {# ── Artifact — RAM ── #}
+  {% if job.dump_filename %}
+    <div class="card">
+      <h2 class="card-title">{{ t.artifact_title }}</h2>
+      <dl class="meta">
+        <dt>{{ t.label_filename }}</dt>
+        <dd class="mono">{{ job.dump_filename }}</dd>
+        {% if job.dump_size_bytes is not none %}
+          <dt>{{ t.label_size }}</dt>
+          <dd>{{ "%.1f"|format(job.dump_size_bytes / 1048576) }} MB</dd>
+        {% endif %}
+        {% if job.dump_checksum %}
+          <dt>{{ t.label_sha256 }}</dt>
+          <dd class="mono small break-all">{{ job.dump_checksum }}</dd>
+        {% endif %}
+        {% if job.dump_path %}
+          <dt>{{ t.label_path }}</dt>
+          <dd class="mono small">{{ job.dump_path }}</dd>
+        {% endif %}
+      </dl>
+      <div class="card-actions">
+        <a href="/api/v1/jobs/{{ job.id }}/artifact" class="wiz-btn wiz-btn--primary">{{ t.btn_download_dump }}</a>
+        {% if job.status == 'completed' %}
+          {% if not vol3_readiness.analysis.ready %}
+          {# A deliberately disabled integration is a configuration state, not a
+             failure: render it neutrally so operators who run without Volatility do
+             not see a red banner on every completed job forever. #}
+          <div class="{{ 'banner-info' if not vol3_readiness.enabled else 'banner-error' }} banner--compact" id="vol-readiness-banner-{{ job.id }}" role="status">
+            <strong>{{ t.vol_readiness_title or "Volatility capabilities unavailable" }}</strong>
+            {% if not vol3_readiness.enabled %}
+              {{ guide.guide_message(t.vol_readiness_disabled or "Volatility integration is disabled. Enable it in configuration and review {guide}.") }}
+            {% else %}
+              {{ guide.guide_message(t.vol_readiness_analysis_unavailable or "Plugin analysis is unavailable because the configured operator-supplied Volatility tool is not ready. Review {guide}.") }}
+            {% endif %}
+          </div>
+          {% endif %}
+          <form action="/jobs/{{ job.id }}/vol3-analysis" method="post" class="inline-form">
+            {% include "partials/csrf_input.html" %}
+            <button type="submit" class="wiz-btn wiz-btn--secondary"{% if not vol3_readiness.analysis.ready %} disabled aria-describedby="vol-readiness-banner-{{ job.id }}"{% endif %}>{{ t.vol_run_v3 }}</button>
+          </form>
+        {% endif %}
+      </div>
+    </div>
+  {% endif %}
+
+  {# ── Artifact — Disk ── #}
+  {% if job.disk_dump_filename %}
+    <div class="card">
+      <h2 class="card-title">{{ t.artifact_disk_title }}</h2>
+      <dl class="meta">
+        <dt>{{ t.label_filename }}</dt>
+        <dd class="mono">{{ job.disk_dump_filename }}</dd>
+        {% if job.disk_dump_size_bytes is not none %}
+          <dt>{{ t.label_size }}</dt>
+          <dd>{{ "%.1f"|format(job.disk_dump_size_bytes / 1073741824) }} GB</dd>
+        {% endif %}
+        {% if job.disk_dump_checksum %}
+          <dt>{{ t.label_sha256 }}</dt>
+          <dd class="mono small break-all">{{ job.disk_dump_checksum }}</dd>
+        {% endif %}
+        {% if job.disk_dump_path %}
+          <dt>{{ t.label_path }}</dt>
+          <dd class="mono small">{{ job.disk_dump_path }}</dd>
+        {% endif %}
+      </dl>
+      <div class="card-actions">
+        <a href="/api/v1/jobs/{{ job.id }}/disk-artifact" class="wiz-btn wiz-btn--primary">{{ t.btn_download_disk_dump }}</a>
+      </div>
+    </div>
+  {% endif %}
+
+  {# ── Volatility 3 ISF ── #}
+  {% if vol3_summary %}
+    <div class="card">
+      <div class="row row--between row--baseline">
+        <h2 class="card-title">{{ t.vol_isf_card_title }}</h2>
+        {% if vol3_summary.last_run_at %}
+          <span class="text-xs text-muted">{{ vol3_summary.last_run_at.strftime('%Y-%m-%d %H:%M:%S UTC') }}</span>
+        {% endif %}
+      </div>
+      <dl class="meta">
+        <dt>{{ t.vol_isf_status }}</dt>
+        <dd>
+          <span class="badge badge-{{ vol3_summary.isf_badge }}">{{ vol3_summary.isf_status }}</span>
+        </dd>
+        {% if vol3_summary.isf_path %}
+          <dt>{{ t.vol_isf_path }}</dt>
+          <dd class="mono small">{{ vol3_summary.isf_path }}</dd>
+        {% endif %}
+        {% if vol3_summary.isf_hash %}
+          <dt>{{ t.vol_isf_hash }}</dt>
+          <dd class="mono small">{{ vol3_summary.isf_hash }}</dd>
+        {% endif %}
+        {% if vol3_summary.isf_kernel_release %}
+          <dt>{{ t.label_kernel }}</dt>
+          <dd class="mono small">{{ vol3_summary.isf_kernel_release }}</dd>
+        {% endif %}
+        {% if vol3_summary.isf_source %}
+          <dt>{{ t.label_source }}</dt>
+          <dd>
+            <span class="wiz-badge normal-case">{{ vol3_summary.isf_source }}</span>
+          </dd>
+        {% endif %}
+        {% if vol3_summary.isf_validation_status %}
+          <dt>{{ t.label_validation }}</dt>
+          <dd>{{ vol3_summary.isf_validation_status }}</dd>
+        {% endif %}
+        {% if vol3_summary.isf_log_path %}
+          <dt>{{ t.label_build_log }}</dt>
+          <dd class="mono small">{{ vol3_summary.isf_log_path }}</dd>
+        {% endif %}
+        {% if vol3_summary.summary_message %}
+          <dt>{{ t.label_notes }}</dt>
+          <dd class="small">{{ vol3_summary.summary_message }}</dd>
+        {% endif %}
+      </dl>
+    </div>
+  {% endif %}
+
+  {# ── Manual override (advanced) ── #}
+  {% if vol3_enabled and not is_active %}
+    <div class="card card--info" id="manual-override-{{ job.id }}" hx-preserve>
+      <h2 class="card-title">{{ t.vol_manual_override_title or "Manual override (advanced)" }}</h2>
+      <p class="text-muted small mb-sm">
+        {{ t.vol_manual_override_hint or "Upload a memory dump and attach it to this job. This bypasses the automatic dump-integrity check — the artifact's provenance is recorded as unverified. Use only when you know the dump matches this kernel." }}
+      </p>
+      <div class="flex gap-sm">
+        <button type="button" class="wiz-btn wiz-btn--secondary" data-upload-dump>
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="square" aria-hidden="true">
+            <path d="M12 15V4M8 8l4-4 4 4"/><path d="M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/>
+          </svg>
+          {{ t.vol_upload_dump or "Upload memory dump" }}
+        </button>
+      </div>
+      <input type="file" hidden data-upload-dump-input>
+      <div class="small mt-3" data-upload-status hidden></div>
+    </div>
+  {% endif %}
+
+  {# ── Error summary ── #}
+  {% if job.error_summary %}
+    <div class="card">
+      <div class="row row--between row--baseline">
+        <h2 class="card-title">{{ t.error_title }}</h2>
+        <a href="/api/v1/jobs/{{ job.id }}" target="_blank" class="text-sm text-muted">{{ t.btn_view_raw_json }}</a>
+      </div>
+      {% if job.error_summary.startswith('HINT:') %}
+        {% set _parts = job.error_summary.split('\n\n', 1) %}
+        <div class="hint-box">
+          {{ _parts[0] }}
+        </div>
+        {% if _parts|length > 1 %}
+          <pre class="error-pre">{{ _parts[1].splitlines()[-30:] | join('\n') }}</pre>
+        {% endif %}
+      {% else %}
+        <pre class="error-pre">{{ job.error_summary.splitlines()[-30:] | join('\n') }}</pre>
+      {% endif %}
+    </div>
+  {% endif %}
+
+</div>

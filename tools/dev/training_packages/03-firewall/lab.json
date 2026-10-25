@@ -1,0 +1,103 @@
+{
+  "format_version": 1,
+  "package_id": "training-firewall",
+  "version": "0.1.0-draft",
+  "title": "Configured firewall and protected Target",
+  "description": "DRAFT: OpenWrt Network Node and protected web Target. Explicit HTTP allow and default deny rules require prepared guest images.",
+  "creator": "AstinusLab training package authors",
+  "license": "LicenseRef-Volatility-Software-License-1.0",
+  "reproducibility": "unlocked",
+  "resources": {
+    "minimum": {
+      "cpu_threads": 2,
+      "memory_mb": 4096,
+      "free_disk_bytes": 34359738368
+    },
+    "recommended": {
+      "cpu_threads": 4,
+      "memory_mb": 8192,
+      "free_disk_bytes": 51539607552
+    }
+  },
+  "networks": [
+    {
+      "id": "entry",
+      "subnet_cidr": "10.77.30.0/24",
+      "reachability": "isolated",
+      "isolated": true,
+      "guest_egress": false,
+      "host_bridge": null
+    },
+    {
+      "id": "protected",
+      "subnet_cidr": "10.77.31.0/24",
+      "reachability": "isolated",
+      "isolated": true,
+      "guest_egress": false,
+      "host_bridge": null
+    }
+  ],
+  "vms": [
+    {
+      "id": "firewall",
+      "role": "network",
+      "image_id": "training-openwrt-firewall",
+      "architecture": "x86_64",
+      "firmware": "bios",
+      "workload_id": null,
+      "vcpus": 1,
+      "memory_mb": 512,
+      "disk_gb": 4,
+      "network_ids": [
+        "entry",
+        "protected"
+      ]
+    },
+    {
+      "id": "protected-web",
+      "role": "target",
+      "image_id": "training-protected-web",
+      "architecture": "x86_64",
+      "firmware": "bios",
+      "workload_id": null,
+      "vcpus": 1,
+      "memory_mb": 1024,
+      "disk_gb": 12,
+      "network_ids": [
+        "protected"
+      ]
+    }
+  ],
+  "topology": [],
+  "experience": {
+    "runbook_path": "experience/runbook.md",
+    "objectives": [
+      "Verify routed HTTP reaches the protected Target through OpenWrt.",
+      "Show a healthy SSH listener is blocked and the firewall deny counter increases.",
+      "Reboot the firewall and prove filtering remains in effect."
+    ],
+    "hints": [
+      "Set the return route as well as the entry-client route.",
+      "Check the service is healthy before interpreting a timeout as filtering.",
+      "A configured firewall is guest state, not a property of a two-NIC recipe."
+    ],
+    "checkpoints": [
+      {
+        "operation": "assert",
+        "scope": "guest",
+        "vm_id": "firewall",
+        "path": "readiness.json",
+        "expected": "v1:training-openwrt-firewall:ready",
+        "timeout_seconds": 30
+      },
+      {
+        "operation": "assert",
+        "scope": "guest",
+        "vm_id": "protected-web",
+        "path": "readiness.json",
+        "expected": "v1:training-protected-web:ready",
+        "timeout_seconds": 30
+      }
+    ]
+  }
+}

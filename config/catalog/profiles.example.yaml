@@ -1,0 +1,158 @@
+profiles:
+  - id: ubuntu
+    family: debian
+    default_username: ubuntu
+    cloud_init_profile: ubuntu
+    rules:
+      - pattern: 'noble|ubuntu[._-]24\.04|ubuntu[._-]24_04'
+        version: '24.04'
+        os_variant: 'ubuntu24.04'
+      - pattern: 'resolute|ubuntu[._-]26\.04|ubuntu[._-]26_04'
+        version: '26.04'
+      - pattern: 'jammy|ubuntu[._-]22\.04|ubuntu[._-]22_04'
+        version: '22.04'
+        os_variant: 'ubuntu22.04'
+      - pattern: 'focal|ubuntu[._-]20\.04|ubuntu[._-]20_04'
+        version: '20.04'
+        os_variant: 'ubuntu20.04'
+        filesystem_type: '9p'
+      - pattern: 'mantic|ubuntu[._-]23\.10'
+        version: '23.10'
+        os_variant: 'ubuntu23.10'
+      - pattern: 'oracular|ubuntu[._-]24\.10'
+        version: '24.10'
+        os_variant: 'ubuntu24.10'
+      - pattern: 'plucky|ubuntu[._-]25\.04'
+        version: '25.04'
+      - pattern: 'ubuntu[._-](\d+[._-]\d+)'
+
+  - id: debian
+    family: debian
+    default_username: debian
+    cloud_init_profile: debian
+    rules:
+      - pattern: 'debian[._-]14|forky'
+        version: '14'
+        os_variant: 'debian12'
+      - pattern: 'debian[._-]13|trixie'
+        version: '13'
+        os_variant: 'debian13'
+      - pattern: 'debian[._-]12|bookworm'
+        version: '12'
+        os_variant: 'debian12'
+        machine_type: 'pc'
+      - pattern: 'debian[._-]11|bullseye'
+        version: '11'
+        os_variant: 'debian11'
+        machine_type: 'pc'
+      - pattern: 'debian[._-]10|buster'
+        version: '10'
+        os_variant: 'debian10'
+        machine_type: 'pc'
+      - pattern: 'debian[._-]sid'
+        version: 'sid'
+        os_variant: 'debian12'
+
+  - id: fedora
+    family: redhat
+    default_username: fedora
+    rules:
+      - pattern: 'fedora.*[._-]44(?:[._-]|$)'
+        version: '44'
+      - pattern: 'fedora.*[._-]43(?:[._-]|$)'
+        version: '43'
+      - pattern: 'fedora.*[._-]42(?:[._-]|$)'
+        version: '42'
+      - pattern: 'fedora.*[._-]41(?:[._-]|$)'
+        version: '41'
+      - pattern: 'fedora.*[._-]40(?:[._-]|$)'
+        version: '40'
+        os_variant: 'fedora40'
+      - pattern: 'fedora.*[._-]39(?:[._-]|$)'
+        version: '39'
+        os_variant: 'fedora39'
+      - pattern: 'fedora.*[._-]38(?:[._-]|$)'
+        version: '38'
+        os_variant: 'fedora38'
+      - pattern: 'fedora.*?[._-](\d+)(?:[._-]|$)'
+
+  - id: centos
+    family: redhat
+    default_username: centos
+    cloud_init_profile: redhat
+    rules:
+      - pattern: 'centos[._-].*?8'
+        version: '8'
+        os_variant: 'centos-stream8'
+      - pattern: 'centos[._-].*?9'
+        version: '9'
+        os_variant: 'centos-stream9'
+      - pattern: 'centos[._-].*?7'
+        version: '7'
+        os_variant: 'centos7.0'
+        filesystem_type: '9p'
+
+  - id: rocky
+    family: redhat
+    default_username: rocky
+    cloud_init_profile: redhat
+    rules:
+      - pattern: 'rocky[._-].*?(\d+)'
+
+  - id: almalinux
+    family: redhat
+    default_username: almalinux
+    cloud_init_profile: redhat
+    rules:
+      - pattern: 'alma[a-z]*[._-]?(\d+)'
+
+  - id: rhel
+    family: redhat
+    default_username: cloud-user
+    cloud_init_profile: redhat
+    rules:
+      - pattern: 'rhel[._-].*?(\d+(?:\.\d+)?)'
+
+  - id: oraclelinux
+    family: redhat
+    default_username: opc
+    cloud_init_profile: redhat
+    rules:
+      - pattern: 'ol[._-].*?(\d+(?:\.\d+)?)'
+
+  - id: opensuse
+    family: suse
+    default_username: opensuse
+    rules:
+      - pattern: 'opensuse[._-]leap[._-](\d+(?:\.\d+)?)'
+      - pattern: 'opensuse[._-]tumbleweed'
+        version: 'tumbleweed'
+      - pattern: 'sles[._-].*?(\d+(?:\.\d+)?)'
+
+  - id: arch
+    family: arch
+    default_username: arch
+    rules:
+      - pattern: 'archlinux|arch[._-]linux|arch[._-]cloud'
+        version: 'rolling'
+
+  - id: manjaro
+    family: arch
+    default_username: manjaro
+    rules:
+      - pattern: 'manjaro'
+        version: 'rolling'
+
+  - id: kali
+    family: debian
+    default_username: kali
+    cloud_init_profile: attacker
+    rules:
+      - pattern: 'kali[._-].*?(\d+(?:\.\d+)?)'
+
+  - id: parrot
+    family: debian
+    default_username: user
+    cloud_init_profile: attacker
+    rules:
+      - pattern: 'parrot[._-].*?(\d+(?:\.\d+)?)'

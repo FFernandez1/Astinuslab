@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}AstinusLab — Jobs{% endblock %}
+{% block head %}<script src="/static/delete-job-modal.js?v={{ asset_v }}" defer></script><link rel="stylesheet" href="/static/css/pages/jobs.css?v={{ asset_v }}">{% endblock %}
+
+{% block content %}
+<div class="wiz-shell">
+  <div class="wiz-body">
+    <main class="wiz-main">
+
+      {% if message %}
+        <div class="banner-{{ message_type }} banner--compact" role="{{ 'status' if message_type == 'success' else 'alert' }}">{{ message }}</div>
+      {% endif %}
+
+      <div class="page-head">
+        <div>
+          <h1 class="page-head__title">{{ t.nav_jobs or "Jobs" }}</h1>
+          <p class="page-head__sub">{{ t.page_desc_jobs or "Browse lab runs and their provisioning, execution, and acquisition status." }}</p>
+        </div>
+        <div class="page-head__actions">
+          <a id="jobs-new" href="/jobs/new" class="wiz-btn wiz-btn--primary">+ {{ t.new_job or "New Job" }}</a>
+        </div>
+      </div>
+
+      {# ── Jobs list ── #}
+      <section class="card card--flush mb-lg">
+        {% include "partials/jobs_table.html" %}
+      </section>
+
+    </main>
+  </div>
+</div>
+{% endblock %}

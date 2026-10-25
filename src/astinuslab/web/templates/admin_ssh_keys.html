@@ -1,0 +1,202 @@
+{% extends "base.html" %} {% block title %}Security — AstinusLab{% endblock %} {% block content %}
+<div class="wiz-shell">
+  <div class="wiz-body">
+    <main class="wiz-main">
+      <div class="page-head">
+        <div>
+          <h1 class="page-head__title">{{ t.ssh_keys_title }}</h1>
+          <p class="page-head__sub">
+            {{ t.page_desc_ssh_keys or "Manage SSH keypairs for lab VMs and API keys for
+            automation." }}
+          </p>
+        </div>
+      </div>
+
+      {% if message %}
+      <div class="banner-{{ message_type }} banner--compact" role="{{ 'status' if message_type == 'success' else 'alert' }}">{{ message }}</div>
+      {% endif %}
+
+      <div class="wiz-vm-grid">
+        <div class="wiz-vm-col wiz-vm-col--info wiz-vm-col--stack">
+          <div class="wiz-vm-col__head">
+            <span class="dot"></span><span>{{ t.generate_key_title }}</span>
+          </div>
+          <form action="/ssh-keys/generate" method="post" class="security-key-form">
+            {% include "partials/csrf_input.html" %}
+            <div class="field-block">
+              <label for="key-name" class="field-label">{{ t.label_key_name }}</label>
+              <input
+                type="text"
+                id="key-name"
+                name="name"
+                required
+                placeholder="{{ t.key_name_placeholder }}"
+                pattern="[a-zA-Z0-9_\-]+"
+                title="{{ t.key_name_hint }}"
+                class="control-mono"
+              />
+              <div class="field-help">{{ t.key_name_hint }}</div>
+            </div>
+            <button type="submit" class="wiz-btn wiz-btn--primary self-start mt-auto">
+              {{ t.btn_generate }}
+            </button>
+          </form>
+        </div>
+
+        <div class="wiz-vm-col wiz-vm-col--success wiz-vm-col--stack">
+          <div class="wiz-vm-col__head">
+            <span class="dot"></span><span>{{ t.how_it_works_title }}</span>
+          </div>
+          <ul class="security-how-list">
+            <li>{{ t.how_it_works_1 }}</li>
+            <li>{{ t.how_it_works_2 }}</li>
+            <li>{{ t.how_it_works_3 }}</li>
+            <li>{{ t.how_it_works_4 }}</li>
+            <li>{{ t.how_it_works_5 }}</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="vault-group-card">
+        <div class="row row--between row--wrap vault-group-card__head">
+          <span class="section-label">
+            {{ t.available_keys_title }}
+            <span class="count-badge">{{ keys|length }}</span>
+          </span>
+          {% if keys %}
+          <button
+            form="keys-form"
+            type="submit"
+            class="wiz-btn wiz-btn--ghost button-danger-text"
+            data-confirm="{{ t.confirm_delete_selected_keys }}"
+          >
+            {{ t.btn_delete_selected }}
+          </button>
+          {% endif %}
+        </div>
+        {% if keys %}
+        <form action="/ssh-keys/bulk-delete" method="post" id="keys-form">
+          {% include "partials/csrf_input.html" %}
+          <div class="table-scroll">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th class="admin-table__check">
+                    <input
+                      type="checkbox"
+                      data-toggle-all=".key-select"
+                      aria-label="{{ t.select_all or 'Select all' }}"
+                    />
+                  </th>
+                  <th>{{ t.col_name }}</th>
+                  <th>{{ t.col_fingerprint }}</th>
+                  <th>{{ t.col_created }}</th>
+                  <th>{{ t.col_status }}</th>
+                  <th class="admin-table__actions-wide"></th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for key in keys %}
+                <tr class="admin-table__row">
+                  <td>
+                    <input
+                      type="checkbox"
+                      class="key-select"
+                      name="names"
+                      value="{{ key.name }}"
+                      aria-label="{{ t.select_key or 'Select key' }} {{ key.name }}"
+                    />
+                  </td>
+                  <td class="mono admin-table__strong">{{ key.name }}</td>
+                  <td class="mono text-muted text-2xs">{{ key.fingerprint }}</td>
+                  <td class="admin-table__muted-mono">
+                    {{ key.created_at.strftime('%Y-%m-%d %H:%M') }}
+                  </td>
+                  <td>
+                    {% if key.active %}
+                    <span class="wiz-badge wiz-badge--success">{{ t.status_active }}</span>
+                    {% else %}
+                    <button
+                      type="submit"
+                      formaction="/ssh-keys/set-active"
+                      formmethod="post"
+                      name="name"
+                      value="{{ key.name }}"
+                      class="wiz-btn wiz-btn--secondary wiz-btn--xs"
+                    >
+                      {{ t.btn_select_key }}
+                    </button>
+                    {% endif %}
+                  </td>
+                  <td class="admin-table__actions-wide">
+                    <button
+                      type="submit"
+                      formaction="/ssh-keys/delete"
+                      formmethod="post"
+                      name="name"
+                      value="{{ key.name }}"
+                      class="wiz-btn wiz-btn--danger wiz-btn--xs"
+                      data-confirm="{{ t.confirm_delete_key_prefix }}{{ key.name }}{{ t.confirm_cannot_undo }}{% if key.active %} {{ t.confirm_delete_key_active_warn }}{% endif %}"
+                    >
+                      {{ t.btn_delete }}
+                    </button>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </form>
+        {% else %}
+        <div class="vault-empty-state">{{ t.no_keys }}</div>
+        {% endif %}
+      </div>
+
+      {% if auth_enabled %}
+      <div class="security-token-card">
+        <div class="row row--between row--start row--wrap security-token-card__body">
+          <div class="security-token-card__copy">
+            <p class="security-token-card__title">API key</p>
+            <p class="security-token-card__desc">
+              Generate a high-entropy bearer token for API automation. The raw token is shown once;
+              store it in a secret manager or shell environment and save only the SHA-256 hash in
+              AstinusLab config.
+            </p>
+          </div>
+          <form action="/api-keys/generate" method="post">
+            {% include "partials/csrf_input.html" %}
+            <button type="submit" class="wiz-btn wiz-btn--primary">Generate API key</button>
+          </form>
+        </div>
+
+        {% if api_token %}
+        <div class="banner-success banner--compact mt-3">
+          Copy this token now. It is not stored and will not be shown again.
+        </div>
+        <div class="security-token-grid">
+          <div>
+            <label class="field-label">Raw token</label>
+            <pre class="mono secret-pre">ASTINUSLAB_ADMIN_API_TOKEN={{ api_token.token }}</pre>
+          </div>
+          <div>
+            <label class="field-label">Config hash</label>
+            <pre class="mono secret-pre">
+ASTINUSLAB_AUTH_ENABLED=true
+ASTINUSLAB_ADMIN_API_TOKEN_HASH={{ api_token.token_hash }}</pre
+            >
+          </div>
+          <div>
+            <label class="field-label">curl example</label>
+            <pre class="mono secret-pre">
+curl http://localhost:8000/api/v1/jobs \
+  -H "Authorization: Bearer {{ api_token.token }}"</pre
+            >
+          </div>
+        </div>
+        {% endif %}
+      </div>
+      {% endif %}
+    </main>
+  </div>
+</div>
+{% endblock %}

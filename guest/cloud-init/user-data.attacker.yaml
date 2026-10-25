@@ -1,0 +1,33 @@
+#cloud-config
+preserve_hostname: false
+
+users:
+  - default
+  - name: REPLACE_GUEST_USER
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    groups: users, adm, sudo
+    shell: /bin/bash
+    lock_passwd: true
+    ssh_authorized_keys:
+      - ssh-ed25519 REPLACE_WITH_LAB_PUBLIC_KEY
+
+ssh_pwauth: false
+disable_root: true
+
+growpart:
+  mode: auto
+  devices: ["/"]
+  ignore_growroot_disabled: false
+
+resize_rootfs: true
+
+package_update: true
+
+packages:
+  - qemu-guest-agent
+
+runcmd:
+  - systemctl start qemu-guest-agent || /usr/sbin/qemu-ga -d
+  - [ sh, -c, "command -v sshd >/dev/null 2>&1 || { command -v apt-get >/dev/null 2>&1 && DEBIAN_FRONTEND=noninteractive apt-get update -qq && DEBIAN_FRONTEND=noninteractive apt-get install -y openssh-server; } || true" ]
+  - [ sh, -c, "systemctl enable ssh || systemctl enable ssh.service || true" ]
+  - [ sh, -c, "systemctl restart ssh || systemctl restart ssh.service || systemctl start ssh || systemctl start ssh.service || true" ]

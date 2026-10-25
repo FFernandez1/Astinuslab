@@ -1,0 +1,36 @@
+{# Log content partial - rendered by both admin_logs_page (via include) and
+   admin_logs_fragment (HTMX auto-refresh target).
+   Context: lines, level_counts, line_count, selected_log, selected_level, q, t #}
+{% if refresh_metadata %}{% include "partials/log_metadata.html" %}{% endif %}
+<div class="logs-filter-summary">
+  <div class="log-stats-bar" role="status" aria-label="{{ t.logs_stats_label }}">
+    {% if level_counts.debug %}<span class="log-stats-chip log-stats-chip--debug">{{ level_counts.debug }} DEBUG</span>{% endif %}
+    {% if level_counts.info %}<span class="log-stats-chip log-stats-chip--info">{{ level_counts.info }} INFO</span>{% endif %}
+    {% if level_counts.warning %}<span class="log-stats-chip log-stats-chip--warning">{{ level_counts.warning }} WARN</span>{% endif %}
+    {% if level_counts.error %}<span class="log-stats-chip log-stats-chip--error">{{ level_counts.error }} ERROR</span>{% endif %}
+    {% if level_counts.critical %}<span class="log-stats-chip log-stats-chip--critical">{{ level_counts.critical }} CRITICAL</span>{% endif %}
+    {% if level_counts.other and selected_level == "all" %}<span class="log-stats-chip log-stats-chip--other">{{ level_counts.other }} {{ t.logs_level_other }}</span>{% endif %}
+  </div>
+  <span class="logs-showing" role="status" aria-live="polite">{{ t.logs_showing }} {{ lines|length }}/{{ line_count }} · {{ selected_level }}</span>
+</div>
+
+<div id="log-viewport" class="log-viewport" role="region" aria-label="{{ selected_log }}" tabindex="0">
+  {% if lines %}
+    {% for item in lines %}
+      <div class="log-line log-line--{{ item.level }}" data-level="{{ item.level }}">
+        <span class="log-line__num" aria-hidden="true">{{ loop.index }}</span>
+        <span class="log-line__level">{{ item.level|upper }}</span>
+        <div class="log-line__body">
+          <span class="log-line__text">{{ item.text }}</span>
+          <details class="log-line__details" hidden>
+            <summary>{{ t.logs_raw_entry }}</summary>
+            <pre class="log-line__raw">{{ item.text }}</pre>
+          </details>
+        </div>
+      </div>
+    {% endfor %}
+  {% else %}
+    <div class="logs-empty-state">{{ t.no_log_content }}</div>
+  {% endif %}
+  <div class="logs-empty-state" data-log-no-matches hidden>{{ t.logs_no_matches }}</div>
+</div>

@@ -1,0 +1,18 @@
+version: 1
+
+network_nodes:
+  - id: openwrt
+    display_name: "OpenWrt Network Node"
+    image_ref: openwrt-x86-64-generic-ext4-combined.qcow2
+    username: root
+    os_variant: generic
+    cloud_init: false
+    enabled: true
+    function_tags:
+      - firewall
+      - router
+      - nat-gateway
+    defaults:
+      vcpus: 1
+      memory_mb: 512
+      disk_gb: 4

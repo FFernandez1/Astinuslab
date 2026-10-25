@@ -1,0 +1,15 @@
+[Unit]
+Description=Configure the AstinusLab Lab 1 DVWA baseline
+After=network-online.target mariadb.service apache2.service
+Wants=network-online.target
+Requires=mariadb.service apache2.service
+Before=astinuslab-training-readiness.service
+ConditionPathExists=!/var/lib/astinuslab/training-dvwa-configured
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/astinuslab-training-dvwa-setup
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

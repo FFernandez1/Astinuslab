@@ -1,0 +1,42 @@
+version: 1
+
+scenarios:
+  - id: immediate-capture
+    enabled: true
+    mode: immediate
+    description: Captura tras preparacion base del guest
+    services: []
+    script:
+      enabled: false
+    trigger:
+      type: automatic
+
+  - id: workload-sample-post-script
+    enabled: true
+    # Optional: MITRE ATT&CK technique IDs (TXXXX or TXXXX.XXX) shown on the scenario card.
+    attack: [T1059]
+    mode: post_script
+    description: Ejecuta un workload simple y captura al finalizar
+    services:
+      - ssh-basic
+      - sample-workload
+    script:
+      enabled: true
+      path: guest/scripts/sample-workload.sh
+      timeout_seconds: 300
+      fail_job_on_nonzero_exit: true
+    trigger:
+      type: automatic
+
+  - id: lab-session
+    enabled: true
+    mode: manual_trigger
+    description: Pentesting lab session with workload provisioning and snapshot reset
+    services:
+      - ssh-basic
+      - lab-session
+    script:
+      enabled: false
+    trigger:
+      type: manual
+      max_wait_seconds: 14400

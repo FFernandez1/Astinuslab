@@ -1,0 +1,19 @@
+{#
+  Render a readiness message whose translated text carries a {guide} placeholder,
+  replacing the placeholder with a real link to the operator guide.
+
+  The message text is translator-supplied, so it must never be marked |safe. The
+  macro splits on the literal placeholder and emits the surrounding text as two
+  autoescaped values with a template-authored anchor between them: the only
+  markup that can reach the page is the anchor written here.
+
+  Legacy /help URLs forward to the separate documentation website.
+#}
+{% macro guide_message(text) -%}
+{%- set _parts = (text or "").split("{guide}") -%}
+{{- _parts[0] -}}
+{%- if _parts|length > 1 -%}
+<a href="/help/user/VOLATILITY3.md">docs/user/VOLATILITY3.md</a>
+{{- _parts[1:]|join("{guide}") -}}
+{%- endif -%}
+{%- endmacro %}

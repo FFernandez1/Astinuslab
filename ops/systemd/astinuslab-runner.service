@@ -1,0 +1,55 @@
+[Unit]
+Description=AstinusLab Host Runner (job dispatcher)
+After=network.target libvirtd.service astinuslab-api@%i.service
+Wants=libvirtd.service
+
+[Service]
+Type=simple
+User=%i
+Group=%i
+WorkingDirectory=@@CURRENT_DIR@@
+Environment=ASTINUSLAB_DATA_DIR=@@INSTALL_DIR@@
+# stdout goes to the journal, so the in-app Logs page needs its own copy.
+Environment=ASTINUSLAB_LOG_TO_FILE=true
+EnvironmentFile=-@@INSTALL_DIR@@/config/astinuslab.env
+# Do not raise --concurrency or run multiple runner instances: locking and
+# reconciliation assume one worker. See docs/architecture/components.md#scaling.
+# This runner owns the only Beat scheduler. Keep its persistent state in the
+# runner-writable storage tree, outside the protected release directory.
+ExecStart=@@CURRENT_DIR@@/.venv/bin/celery -A astinuslab.jobs.celery_main worker --loglevel=INFO --concurrency=1 --pool=threads --beat --schedule=@@STORAGE_ROOT@@/tmp/celerybeat-schedule
+Restart=on-failure
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=astinuslab-runner
+
+# Privilege hardening
+# NoNewPrivileges is intentionally NOT set: the runner invokes the privileged
+# helpers via `sudo -n` (/etc/sudoers.d/astinuslab-runner), and NoNewPrivileges
+# makes every sudo call fail. Dev mode documents the same requirement
+# (docs/development/setup.md, "NoNewPrivs: 0" check).
+# PrivateDevices intentionally omitted — the sudo-root helpers run inside this
+# unit's mount namespace and reach the hypervisor device set through libvirt.
+# ProtectHome is templated: install.sh selects tmpfs when the configured storage
+# root lives under /home, so a custom root stays writable via BindPaths.
+# /var/lib/libvirt/images is whitelisted because the sudo-root storage helper
+# runs inside this unit's mount namespace and writes the VM overlays there.
+PrivateTmp=true
+ProtectSystem=strict
+ReadOnlyPaths=@@INSTALL_DIR@@
+@@PROTECT_HOME@@
+# sudo helper children inherit this filter; nft iptables needs netlink to
+# inspect and remove the Job's isolation rules, even when running as root.
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX AF_NETLINK
+UMask=0007
+LockPersonality=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectKernelLogs=true
+ProtectControlGroups=true
+# Catalog and config edits belong to the API identity, and PrivateTmp already
+# supplies a writable private /tmp, so neither is listed here.
+ReadWritePaths=@@STORAGE_ROOT@@ @@INSTALL_DIR@@/images/definitions @@INSTALL_DIR@@/vol3/symbols /var/lib/libvirt/images
+
+[Install]
+WantedBy=multi-user.target

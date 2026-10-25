@@ -1,0 +1,54 @@
+<div id="settings-network" class="settings-network-grid" hx-get="/settings/fragment/network" hx-trigger="every 15s" hx-swap="outerHTML">
+
+  <div class="wiz-vm-col settings-net-col settings-net-col--info">
+    <div class="wiz-vm-col__head">
+      <span class="dot"></span><span>libvirt network</span>
+      <span class="settings-net-bridge">{{ network.get('bridge') or '—' }}</span>
+    </div>
+
+    {% if network.state == 'unavailable' %}
+      <div class="settings-net-error">libvirt unavailable — {{ network.error }}</div>
+    {% else %}
+      <div class="settings-net-facts">
+        {% for label, value in [('state', network.state), ('autostart', network.autostart), ('forward', network.forward), ('bridge', network.bridge), ('subnet', network.subnet), ('gateway', network.gateway)] %}
+          <div class="settings-net-fact">
+            <span class="settings-net-fact__k">{{ label }}</span>
+            <span class="settings-net-fact__v">{{ value or '—' }}</span>
+          </div>
+        {% endfor %}
+      </div>
+      <div class="settings-net-actions">
+        <div class="settings-net-actions__hint">{{ t.settings_network_restart_hint or "Restarts the libvirt network and re-issues DHCP leases. Active VMs briefly lose connectivity (~2s)." }}</div>
+        <form hx-post="/settings/network/restart" hx-target="#settings-network" hx-swap="outerHTML"
+              hx-indicator="find .htmx-indicator"
+              hx-disabled-elt="find button"
+              hx-confirm="{{ t.settings_network_restart_confirm or 'Restart the libvirt network? Active VMs lose connectivity for ~2s.' }}"
+              class="settings-inline-form">
+          <button type="submit" class="wiz-btn wiz-btn--secondary">
+            <span class="spinner htmx-indicator" aria-hidden="true"></span>
+            {{ t.settings_network_restart_button or "Restart network and leases" }}
+          </button>
+        </form>
+      </div>
+    {% endif %}
+  </div>
+
+  <div class="wiz-vm-col settings-net-col settings-net-col--success">
+    <div class="wiz-vm-col__head">
+      <span class="dot"></span><span>dhcp leases</span>
+      <span class="settings-net-count">{{ leases|length }}</span>
+    </div>
+    {% if leases %}
+      {% for l in leases %}
+        <div class="settings-lease-row" title="{{ l.mac }}">
+          <span class="settings-lease-host">{{ l.host }}</span>
+          <span class="settings-lease-ip">{{ l.ip }}</span>
+        </div>
+      {% endfor %}
+    {% else %}
+      <div class="settings-net-empty">no active leases</div>
+    {% endif %}
+  </div>
+
+  {% if toast %}{% include "partials/settings_toast.html" %}{% endif %}
+</div>

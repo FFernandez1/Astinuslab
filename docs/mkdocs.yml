@@ -1,0 +1,319 @@
+site_name: AstinusLab
+site_description: Attack-and-forensics playground for local security research labs
+# No site_url: there is no public documentation site for 1.0.0, and the previous
+# value was a placeholder domain the project does not own. site_url drives
+# canonical links and the sitemap, so shipping the placeholder meant publishing
+# canonical URLs pointing somewhere we do not control.
+#
+# Known cost of omitting it: no canonical tags are emitted (correct), but
+# sitemap.xml entries come out as "None./", "NoneLICENSE/", ... The
+# mkdocs-static-i18n sitemap template falls back to `config.site_url ~ file.url`
+# with no None-guard, and Jinja renders None as the string "None". Harmless for
+# local/preview builds, where nothing reads sitemap.xml.
+#
+# Set this to the real URL before publishing the site. That fixes both the
+# canonical tags and the sitemap; no other change is needed.
+docs_dir: .
+site_dir: ../site
+exclude_docs: |
+  plans/**
+  superpowers/**
+  audits/**
+  remediation/**
+
+not_in_nav: |
+  development/verification-matrix.md
+  development/RELEASE_ACCEPTANCE.md
+  development/portable-package-evidence.md
+  benchmarks/workflows.md
+  benchmarks/2026-09-07-small-workflows.md
+  reference/API.md
+  reference/PLAYGROUND_API.md
+  reference/API.es.md
+  reference/PLAYGROUND_API.es.md
+  reference/API.fr.md
+  reference/PLAYGROUND_API.fr.md
+  reference/API.ca.md
+  reference/PLAYGROUND_API.ca.md
+  architecture/repository-inventory.md
+  architecture/repository-boundaries.md
+  architecture/repository-placement-policy.md
+  architecture/repository-target-layout.md
+  architecture/path-migration-matrix.md
+  dev/host-nightly-runner.md
+  dev/upgrade-acceptance-host.md
+
+theme:
+  name: material
+  custom_dir: overrides
+  logo: assets/logo.svg
+  favicon: assets/logo.svg
+  palette:
+    - scheme: default
+      primary: white
+      accent: green
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+    - scheme: slate
+      primary: black
+      accent: green
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to light mode
+  font:
+    text: Fira Mono
+    code: Fira Mono
+  features:
+    - search.suggest
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.sections
+    - navigation.expand
+    - navigation.indexes
+    - toc.follow
+    - content.code.copy
+    - content.code.annotate
+
+extra_css:
+  - stylesheets/extra.css
+
+extra_javascript:
+  - javascripts/toc-active-hash.js
+  - javascripts/navigation.js
+
+hooks:
+  - hooks/strip_i18n_alternate_links.py
+  - hooks/split_search_index_by_language.py
+
+plugins:
+  - search
+  - i18n:
+      docs_structure: suffix
+      fallback_to_default: true
+      reconfigure_material: true
+      reconfigure_search: true
+      languages:
+        - locale: en
+          default: true
+          name: English
+          build: true
+        - locale: es
+          name: Español
+          build: true
+          nav_translations:
+            Home: Inicio
+            Usage: Uso
+            Playground: Playground
+            Portable Lab Packages: Paquetes de laboratorio portátiles
+            Getting Started: Primeros pasos
+            Configuration: Configuración
+            Running Locally: Ejecución local
+            Examples: Ejemplos
+            Troubleshooting: Solución de problemas
+            Pre-baked Images: Imágenes preparadas
+            Windows Images: Imágenes de Windows
+            Volatility 3: Volatility 3
+            Architecture: Arquitectura
+            Overview: Visión general
+            Components: Componentes
+            Data Flow: Flujo de datos
+            Decisions: Decisiones
+            VM-Based ISF Generation: Generación de ISF basada en VM
+            Backend Boundaries: Límites del backend
+            Dependency Locking: Bloqueo de dependencias
+            Hotspots and Size Budgets: Puntos críticos y presupuestos de tamaño
+            Error Field Naming: Nombres de campos de error
+            API: API
+            Endpoints: Endpoints
+            Authentication: Autenticación
+            Errors: Errores
+            Playground API: API de Playground
+            Reference: Referencia
+            Advanced Configuration: Configuración avanzada
+            Distro Support: Soporte de distribuciones
+            Forensic Integrity: Integridad forense
+            Development: Desarrollo
+            Setup: Preparación
+            Testing: Pruebas
+            Contributing: Contribuir
+            Backend Internals: Internos del backend
+            Frontend Internals: Internos del frontend
+            V1 Scope and Roadmap: Alcance V1 y hoja de ruta
+            Workload Development: Desarrollo de workloads
+            Generated Runtime Files: Archivos de runtime generados
+            Repository Layout: Estructura del repositorio
+            Community: Comunidad
+            Governance: Gobernanza
+            Security Reporting: Comunicación de vulnerabilidades
+            Authors: Autores
+            License: Licencia
+            Third-Party Notices: Avisos de terceros
+        - locale: fr
+          name: Français
+          build: true
+          nav_translations:
+            Home: Accueil
+            Usage: Utilisation
+            Playground: Playground
+            Portable Lab Packages: Packages de laboratoire portables
+            Getting Started: Prise en main
+            Configuration: Configuration
+            Running Locally: Exécution locale
+            Examples: Exemples
+            Troubleshooting: Dépannage
+            Pre-baked Images: Images préparées
+            Windows Images: Images Windows
+            Volatility 3: Volatility 3
+            Architecture: Architecture
+            Overview: Vue d'ensemble
+            Components: Composants
+            Data Flow: Flux de données
+            Decisions: Décisions
+            VM-Based ISF Generation: Génération d'ISF basée sur VM
+            Backend Boundaries: Frontières du backend
+            Dependency Locking: Verrouillage des dépendances
+            Hotspots and Size Budgets: Points chauds et budgets de taille
+            Error Field Naming: Nommage des champs d erreur
+            API: API
+            Endpoints: Points de terminaison
+            Authentication: Authentification
+            Errors: Erreurs
+            Playground API: API Playground
+            Reference: Référence
+            Advanced Configuration: Configuration avancée
+            Distro Support: Support des distributions
+            Forensic Integrity: Intégrité forensique
+            Development: Développement
+            Setup: Configuration
+            Testing: Tests
+            Contributing: Contribuer
+            Backend Internals: Internes du backend
+            Frontend Internals: Internes du frontend
+            V1 Scope and Roadmap: Portée V1 et feuille de route
+            Workload Development: Développement de workloads
+            Generated Runtime Files: Fichiers d'exécution générés
+            Repository Layout: Structure du dépôt
+            Community: Communauté
+            Governance: Gouvernance
+            Security Reporting: Signalement des vulnérabilités
+            Authors: Auteurs
+            License: Licence
+            Third-Party Notices: Mentions des tiers
+        - locale: ca
+          name: Català
+          build: true
+          nav_translations:
+            Home: Inici
+            Usage: Ús
+            Playground: Playground
+            Portable Lab Packages: Paquets de laboratori portàtils
+            Getting Started: Primers passos
+            Configuration: Configuració
+            Running Locally: Execució local
+            Examples: Exemples
+            Troubleshooting: Resolució de problemes
+            Pre-baked Images: Imatges preparades
+            Windows Images: Imatges de Windows
+            Volatility 3: Volatility 3
+            Architecture: Arquitectura
+            Overview: Visió general
+            Components: Components
+            Data Flow: Flux de dades
+            Decisions: Decisions
+            VM-Based ISF Generation: Generació d'ISF basada en VM
+            Backend Boundaries: Límits del backend
+            Dependency Locking: Bloqueig de dependències
+            Hotspots and Size Budgets: Punts crítics i pressupostos de mida
+            Error Field Naming: Noms dels camps d error
+            API: API
+            Endpoints: Punts finals
+            Authentication: Autenticació
+            Errors: Errors
+            Playground API: API de Playground
+            Reference: Referència
+            Advanced Configuration: Configuració avançada
+            Distro Support: Suport de distribucions
+            Forensic Integrity: Integritat forense
+            Development: Desenvolupament
+            Setup: Preparació
+            Testing: Proves
+            Contributing: Contribuir
+            Backend Internals: Interns del backend
+            Frontend Internals: Interns del frontend
+            V1 Scope and Roadmap: Abast V1 i full de ruta
+            Workload Development: Desenvolupament de workloads
+            Generated Runtime Files: Fitxers de runtime generats
+            Repository Layout: Estructura del repositori
+            Community: Comunitat
+            Governance: Governança
+            Security Reporting: Comunicació de vulnerabilitats
+            Authors: Autors
+            License: Llicència
+            Third-Party Notices: Avisos de tercers
+
+markdown_extensions:
+  - admonition
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - attr_list
+  - md_in_html
+  - toc:
+      permalink: true
+
+nav:
+  - Home: index.md
+  - Usage:
+    - Getting Started: usage/getting-started.md
+    - Running Locally: usage/running-locally.md
+    - Configuration: usage/configuration.md
+    - Playground: user/PLAYGROUND.md
+    - Portable Lab Packages: user/PORTABLE_LABS.md
+    - Pre-baked Images: user/PREBAKED_IMAGES.md
+    - Windows Images: user/WINDOWS_IMAGES.md
+    - Volatility 3: user/VOLATILITY3.md
+    - Examples: usage/examples.md
+    - Troubleshooting: usage/troubleshooting.md
+  - Architecture:
+    - Overview: architecture/overview.md
+    - Components: architecture/components.md
+    - Data Flow: architecture/data-flow.md
+    - Decisions: architecture/decisions.md
+    - VM-Based ISF Generation: architecture/adr-vm-based-isf-generation.md
+    - Backend Boundaries: architecture/backend-boundaries.md
+    - Dependency Locking: architecture/dependency-locking.md
+    - Hotspots and Size Budgets: architecture/hotspots.md
+    - Error Field Naming: architecture/adr-error-field-naming.md
+  - API:
+    - Overview: api/overview.md
+    - Endpoints: api/endpoints.md
+    - Authentication: api/authentication.md
+    - Errors: api/errors.md
+    - Playground API: api/playground.md
+  - Reference:
+    - Advanced Configuration: reference/ADVANCED_CONFIG.md
+    - Distro Support: reference/DISTRO_SUPPORT.md
+    - Forensic Integrity: reference/FORENSIC_INTEGRITY.md
+  - Development:
+    - Setup: development/setup.md
+    - Testing: development/testing.md
+    - Contributing: development/contributing.md
+    - Backend Internals: development/BACKEND.md
+    - Frontend Internals: development/FRONTEND.md
+    - V1 Scope and Roadmap: development/ROADMAP.md
+    - Workload Development: development/WORKLOADS.md
+    - Generated Runtime Files: development/GENERATED_RUNTIME_FILES.md
+    - Repository Layout: development/REPOSITORY_LAYOUT.md
+  - Community:
+    - Governance: community/GOVERNANCE.md
+    - Security Reporting: community/SECURITY.md
+    - Authors: community/AUTHORS.md
+    - License: LICENSE.md
+    - Third-Party Notices: THIRD_PARTY_NOTICES.md

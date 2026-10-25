@@ -1,0 +1,10 @@
+version: 2
+ethernets:
+  default_nic:
+    match:
+      name: "e*"
+    dhcp4: true
+    dhcp6: false
+    dhcp4-overrides:
+      send-hostname: true
+

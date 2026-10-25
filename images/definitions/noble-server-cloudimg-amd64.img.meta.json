@@ -1,0 +1,17 @@
+{
+  "arch": null,
+  "cloud_init_profile": null,
+  "default_username": "ubuntu",
+  "detected_at": "2026-05-03T04:53:54+00:00",
+  "distro": "ubuntu",
+  "family": "debian",
+  "inject_network_config": null,
+  "inspect_error": null,
+  "kernel_release": null,
+  "machine_type": null,
+  "os_variant": "generic",
+  "schema_version": 1,
+  "source": "filename",
+  "user_edited_fields": [],
+  "version": "24.04"
+}

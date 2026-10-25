@@ -1,0 +1,101 @@
+# AstinusLab Global Configuration File
+
+[orchestration]
+api_host = "127.0.0.1"
+api_port = 8000
+api_log_level = "info"
+libvirt_uri = "qemu:///system"
+libvirt_network = "default"
+# Max simultaneously active VMs across the Playground session and forensic
+# jobs (a job with an attacker VM needs 2). Omit for no cap (default).
+# Values above 16 log a startup RAM warning. Requires service restart.
+# max_concurrent_vms = 4
+
+[auth]
+# Development checkout default: keep this explicit no-auth mode only on loopback.
+# Installed mode rewrites this section with auth enabled and a generated hash.
+enabled = false
+# Store SHA-256 as "sha256:<hex>". Generate with:
+# python - <<'PY'
+# import getpass, hashlib
+# token = getpass.getpass('Admin API token: ')
+# print('sha256:' + hashlib.sha256(token.encode('utf-8')).hexdigest())
+# PY
+admin_api_token_hash = ""
+allow_unsafe_network_bind_without_auth = false
+# Exact public browser origin(s) for non-loopback deployments. Empty derives
+# http://127.0.0.1, http://localhost, and http://[::1] at api_port only.
+browser_allowed_origins = []
+
+[storage]
+storage_dir = "storage"
+db_path = "storage/astinuslab.db"
+images_dir = "images/definitions"
+playground_disk_dir = "{base_dir}/storage/playground/disks"
+playground_capture_dir = "{base_dir}/storage/playground/captures"
+# Timeout for Playground disk capture qemu-img conversions, in seconds.
+playground_capture_timeout_seconds = 900
+libvirt_image_base_dir = "/var/lib/libvirt/images/astinuslab"
+
+[packages]
+# Portable package sharing is disabled by default. Enable it only on a
+# controlled local host; when disabled, its API routes and Playground export
+# control are not mounted.
+enabled = false
+# Pinned-source retrieval must be explicitly permitted. Leave false for
+# offline-only environments; embedded or cached content still works offline.
+allow_source_network = false
+# Package launches that request guest egress require this local policy and a
+# separate launch acknowledgement.
+allow_guest_egress = false
+# Package-workflow limits are bytes. The defaults are a 16 GiB asset and a
+# 40 GiB archive.
+max_asset_bytes = 17179869184
+max_archive_bytes = 42949672960
+# Package-content collection retains unreferenced data for this many seconds
+# before removal.
+gc_grace_seconds = 86400
+
+[catalogs]
+targets = "config/catalog/targets.yaml"
+scenarios = "config/catalog/scenarios.yaml"
+workloads = "config/catalog/workloads.yaml"
+attackers = "config/catalog/attackers.yaml"
+network_nodes = "config/catalog/network_nodes.yaml"
+
+[vol3]
+enabled = true
+symbols_path = "vol3/symbols"
+# AstinusLab neither installs external tools nor accepts upstream licenses on
+# the operator's behalf. Install and review each tool separately, then configure
+# its path explicitly. Pin dwarf2json to the checksum you reviewed.
+# dwarf2json_path = "/opt/dwarf2json/bin/dwarf2json"
+# dwarf2json_sha256 = "<64-character SHA-256>"
+# volatility_bin = "/opt/volatility3/bin/vol"
+default_plugins = "linux.bash.Bash,linux.pslist.PsList,linux.pstree.PsTree,linux.pmap.Pmap"
+fetch_timeout_seconds = 1800
+# Prebuilt ISF mirrors must use https:// in normal deployments. file:// is
+# accepted only for local tests and controlled offline environments.
+isf_mirror_urls = []
+prebuilt_max_compressed_bytes = 67108864
+prebuilt_max_decompressed_bytes = 1073741824
+debuginfod_urls = []
+debuginfod_min_free_bytes = 2147483648
+
+[vol3.provider_timeouts]
+prebuilt_isf = 60
+debuginfod = 900
+host_fetch = 1800
+live_guest = 1800
+
+[celery]
+broker_url = "sqla+sqlite:///{base_dir}/storage/celery_broker.db"
+result_backend = "db+sqlite:///{base_dir}/storage/celery_results.db"
+reconciliation_enabled = true
+reconciliation_interval_seconds = 60
+reconciliation_grace_seconds = 120
+
+[image_inspection]
+enabled = true
+timeout_seconds = 60
+virt_inspector_bin = "virt-inspector"

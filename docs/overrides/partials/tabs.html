@@ -1,0 +1,13 @@
+  <nav class="md-tabs astinuslab-nav" aria-label="{{ lang.t('tabs') }}" data-md-component="tabs">
+    <div class="astinuslab-nav__inner">
+      <ul class="md-tabs__list">
+        {% for nav_item in nav %}
+          <li class="md-tabs__item">
+            <a href="{{ nav_item.url | url }}" class="md-tabs__link {% if nav_item.active %} md-tabs__link--active {% endif %}">
+              {{ nav_item.title }}
+            </a>
+          </li>
+        {% endfor %}
+      </ul>
+    </div>
+  </nav>

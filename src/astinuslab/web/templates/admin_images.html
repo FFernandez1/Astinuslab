@@ -1,0 +1,603 @@
+{% extends "base.html" %} {% block title %}Image Vault — AstinusLab{% endblock %} {% block head
+%}<link rel="stylesheet" href="/static/css/pages/images.css?v={{ asset_v }}" />{% endblock %} {% block content
+%}
+<div class="wiz-shell">
+  <div class="wiz-body">
+    <main class="wiz-main">
+      {% if message %}
+      <div class="banner-{{ message_type }} banner--compact" role="{{ 'status' if message_type == 'success' else 'alert' }}">{{ message }}</div>
+      {% endif %} {# ── Image list ── #}
+      <div class="page-head">
+        <div>
+          <h1 class="page-head__title">{{ t.available_images_title }}</h1>
+          <p class="page-head__sub">
+            {{ t.page_desc_images or "Base VM images for targets and attackers — download, upload,
+            and manage the local vault." }}
+          </p>
+        </div>
+      </div>
+      <div class="vault-group-card">
+        <div class="row row--between row--wrap vault-group-card__head">
+          <span class="section-label">
+            IMAGES
+            <span class="count-badge">{{ images|length }}</span>
+            <button
+              type="button"
+              class="btn-icon"
+              title="Open images folder"
+              data-open-images-folder
+              aria-label="Open images folder"
+            >
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.5"
+                stroke-linecap="square"
+                stroke-linejoin="miter"
+                aria-hidden="true"
+              >
+                <path d="M3 6h6l2 2h10v11H3z" />
+              </svg>
+            </button>
+          </span>
+          {% if images %}
+          <button
+            form="images-form"
+            type="submit"
+            class="wiz-btn wiz-btn--ghost button-danger-text"
+            data-confirm="{{ t.confirm_delete_selected_images }}"
+          >
+            {{ t.btn_delete_selected }}
+          </button>
+          {% endif %}
+        </div>
+        <div
+          id="image-vault-status"
+          class="image-vault-status"
+          data-image-vault-status
+          role="status"
+          aria-live="polite"
+          hidden
+        ></div>
+
+        {% if images %}
+        <form action="/images/bulk-delete" method="post" id="images-form">
+          {% include "partials/csrf_input.html" %}
+          <div class="table-scroll">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th class="admin-table__check image-table__check">
+                    <input
+                      type="checkbox"
+                      data-toggle-all=".image-select"
+                      aria-label="{{ t.select_all or 'Select all' }}"
+                    />
+                  </th>
+                  <th>{{ t.col_file }}</th>
+                  <th>{{ t.col_detected_distro }}</th>
+                  <th>{{ t.col_size }}</th>
+                  <th>{{ t.col_modified }}</th>
+                  <th class="admin-table__actions-wide"></th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for img in images %}
+                <tr class="admin-table__row">
+                  <td>
+                    <input
+                      type="checkbox"
+                      class="image-select"
+                      name="filenames"
+                      value="{{ img.filename }}"
+                      aria-label="{{ t.select_image or 'Select image' }} {{ img.filename }}"
+                    />
+                  </td>
+                  <td class="mono break-all">{{ img.filename }}</td>
+                  <td>
+                    {% if img.distro != 'unknown' %}
+                    <span class="wiz-badge wiz-badge--os wiz-badge--os-{{ img.distro|lower }}"
+                      >{{ img.distro }} {{ img.version }}</span
+                    >
+                    {% else %}
+                    <span class="text-muted small">—</span>
+                    {% endif %} {% set src = img.source or 'filename' %} {% if src in ['inspected',
+                    'user'] %}
+                    <span
+                      class="wiz-badge image-source-badge {% if src == 'inspected' %}wiz-badge--success{% else %}wiz-badge--info{% endif %}"
+                      data-img-source="{{ src }}"
+                    >
+                      {% if src == 'inspected' %}auto-detected{% else %}edited{% endif %}
+                    </span>
+                    {% endif %} {% if img.inspect_error %}
+                    <span
+                      class="wiz-badge wiz-badge--warning image-inspect-badge"
+                      title="{{ img.inspect_error }}"
+                      >!</span
+                    >
+                    {% endif %}
+                  </td>
+                  <td class="text-muted small nowrap mono">
+                    {% if img.size_mb >= 1024 %} {{ "%.2f"|format(img.size_mb / 1024) }} GB {% else
+                    %} {{ "%.0f"|format(img.size_mb) }} MB {% endif %}
+                  </td>
+                  <td class="text-muted small nowrap mono">
+                    {{ img.modified.strftime('%Y-%m-%d %H:%M') }}
+                  </td>
+                  <td class="admin-table__actions-wide">
+                    <div class="row row--end image-actions-row">
+                      <button
+                        type="button"
+                        class="wiz-btn wiz-btn--ghost wiz-btn--xs"
+                        data-image-meta-filename="{{ img.filename }}"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        type="button"
+                        class="wiz-btn wiz-btn--ghost wiz-btn--xs"
+                        data-reinspect-image-filename="{{ img.filename }}"
+                      >
+                        Re-inspect
+                      </button>
+                      <button
+                        type="submit"
+                        formaction="/images/delete"
+                        formmethod="post"
+                        name="filename"
+                        value="{{ img.filename }}"
+                        class="wiz-btn wiz-btn--danger wiz-btn--xs"
+                        data-confirm="{{ t.confirm_delete_image_prefix }}{{ img.filename }}{{ t.confirm_cannot_undo }}"
+                      >
+                        {{ t.btn_delete_image }}
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </form>
+        {% else %}
+        <div class="vault-empty-state">{{ t.no_images }}</div>
+        {% endif %}
+      </div>
+
+      {# ── Add image ── #}
+      <div class="wiz-vm-grid">
+        {# Download from URL #}
+        <div class="wiz-vm-col wiz-vm-col--info image-card">
+          <div class="wiz-vm-col__head">
+            <span class="dot"></span><span>{{ t.download_from_url_title }}</span>
+          </div>
+          <form
+            hx-post="/images/fetch-url"
+            hx-target="#url-downloads"
+            hx-swap="afterbegin"
+            hx-encoding="application/x-www-form-urlencoded"
+            hx-indicator="find .htmx-indicator"
+            hx-disabled-elt="find button"
+            data-reset-after-success
+          >
+            <div class="field-block">
+              <label for="img-url" class="field-label">{{ t.label_image_url }}</label>
+              <input
+                type="url"
+                id="img-url"
+                name="url"
+                required
+                placeholder="https://cloud.debian.org/…/debian-12-genericcloud-amd64.qcow2"
+                class="control-mono"
+              />
+            </div>
+
+            <div class="row row--wrap image-policy-row">
+              <span class="image-policy-label">{{ t.active_download_policy }}:</span>
+              <span class="wiz-badge wiz-badge--info"
+                >{{ download_config.source_policy.replace('_',' ') }}</span
+              >
+              <span class="wiz-badge wiz-badge--success">{{ download_config.network_policy }}</span>
+              <span class="image-policy-note">max {{ download_config.max_size_gb }} GB</span>
+            </div>
+
+            <button type="submit" class="wiz-btn wiz-btn--primary w-full">
+              <span class="spinner spinner--on-primary htmx-indicator" aria-hidden="true"></span>
+              {{ t.btn_start_download }}
+            </button>
+          </form>
+          <div id="url-downloads" class="image-downloads">
+            {% for dl_id, dl in downloads.items() %} {% include "partials/download_progress.html" %}
+            {% endfor %}
+          </div>
+        </div>
+
+        {# Upload from host #}
+        <div class="wiz-vm-col wiz-vm-col--success image-card">
+          <div class="wiz-vm-col__head">
+            <span class="dot"></span><span>{{ t.upload_from_host_title }}</span>
+          </div>
+          <form action="/images/upload" method="post" enctype="multipart/form-data">
+            {% include "partials/csrf_input.html" %}
+            <label for="img-file" id="drop-zone" class="image-drop-zone">
+              <svg
+                width="22"
+                height="22"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.5"
+                stroke-linecap="square"
+                stroke-linejoin="miter"
+                class="image-drop-icon"
+                aria-hidden="true"
+              >
+                <path d="M12 16V4 M6 10l6-6 6 6 M4 20h16" />
+              </svg>
+              <div class="image-drop-body">
+                <span id="img-fname" class="image-file-name">{{ t.btn_select_file }}</span>
+                <div class="image-file-help">{{ t.formats_hint }}</div>
+              </div>
+            </label>
+            <input
+              type="file"
+              id="img-file"
+              name="file"
+              accept=".qcow2,.img,.img.gz"
+              class="sr-only"
+              required
+            />
+            <button type="submit" class="wiz-btn wiz-btn--primary w-full">
+              {{ t.btn_upload }}
+            </button>
+          </form>
+        </div>
+      </div>
+
+      {# ── Download settings ── #}
+      <div class="image-download-settings">
+        <h2 class="wiz-label image-download-settings__title">{{ t.download_settings_title }}</h2>
+        <div class="image-download-settings__panel">
+          <form action="/images/settings" method="post">
+            {% include "partials/csrf_input.html" %}
+            <div class="image-settings-grid">
+              <div>
+                <label for="source-policy" class="field-label">{{ t.label_download_policy }}</label>
+                <select id="source-policy" name="source_policy" class="control-compact">
+                  {% for value, label in download_policies %}
+                  <option value="{{ value }}" {% if download_config.source_policy == value %}selected{% endif %}>
+                    {{ label }}
+                  </option>
+                  {% endfor %}
+                </select>
+                <div class="field-help">{{ t.help_download_policy }}</div>
+              </div>
+              <div>
+                <label for="network-policy" class="field-label">{{ t.label_network_policy }}</label>
+                <select id="network-policy" name="network_policy" class="control-compact">
+                  {% for value, label in network_policies %}
+                  <option value="{{ value }}" {% if download_config.network_policy == value %}selected{% endif %}>
+                    {{ label }}
+                  </option>
+                  {% endfor %}
+                </select>
+                <div class="field-help">{{ t.help_network_policy }}</div>
+              </div>
+            </div>
+
+            <div id="ssrf-warning" class="image-warning">⚠ {{ t.warn_ssrf_risk }}</div>
+
+            <div
+              id="allowlist-panel"
+              class="image-allowlist-panel{% if download_config.source_policy == 'allowlist' %} is-visible{% endif %}"
+            >
+              <label for="allowed-domains" class="field-label">{{ t.label_allowed_domains }}</label>
+              <textarea
+                id="allowed-domains"
+                name="allowed_domains"
+                rows="4"
+                class="control-mono w-full"
+              >
+{{ allowed_domains_text }}</textarea
+              >
+              <div class="field-help">{{ t.allowed_domains_hint }}</div>
+            </div>
+
+            <div class="image-settings-grid image-settings-grid--timeouts">
+              <div>
+                <label for="connect-timeout" class="field-label"
+                  >{{ t.label_connect_timeout }}</label
+                >
+                <input
+                  type="number"
+                  min="1"
+                  max="300"
+                  id="connect-timeout"
+                  name="connect_timeout_seconds"
+                  value="{{ download_config.connect_timeout_seconds }}"
+                  class="control-mono"
+                />
+                <div class="field-help">{{ t.help_connect_timeout }}</div>
+              </div>
+              <div>
+                <label for="read-timeout" class="field-label">{{ t.label_read_timeout }}</label>
+                <input
+                  type="number"
+                  min="1"
+                  max="7200"
+                  id="read-timeout"
+                  name="read_timeout_seconds"
+                  value="{{ download_config.read_timeout_seconds }}"
+                  class="control-mono"
+                />
+                <div class="field-help">{{ t.help_read_timeout }}</div>
+              </div>
+              <div>
+                <label for="max-size" class="field-label">{{ t.label_max_size_gb }}</label>
+                <input
+                  type="number"
+                  min="1"
+                  max="500"
+                  id="max-size"
+                  name="max_size_gb"
+                  value="{{ download_config.max_size_gb }}"
+                  class="control-mono"
+                />
+                <div class="field-help">{{ t.help_max_size_gb }}</div>
+              </div>
+            </div>
+
+            <button type="submit" class="wiz-btn wiz-btn--secondary">
+              {{ t.btn_save_settings }}
+            </button>
+          </form>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<div id="img-meta-modal" class="image-meta-modal" role="dialog" aria-modal="true" aria-labelledby="img-meta-title" aria-hidden="true">
+  <div class="image-meta-dialog">
+    <h3 id="img-meta-title" class="image-meta-title">Image metadata</h3>
+    <div id="img-meta-filename" class="mono image-meta-filename"></div>
+    <form id="img-meta-form">
+      <div class="image-meta-grid">
+        <label class="image-meta-label"
+          >Distro
+          <input name="distro" required class="image-meta-control image-meta-control--mono" />
+        </label>
+        <label class="image-meta-label"
+          >Version
+          <input name="version" required class="image-meta-control image-meta-control--mono" />
+        </label>
+        <label class="image-meta-label"
+          >Family
+          <select name="family" class="image-meta-control">
+            <option value="debian">debian</option>
+            <option value="redhat">redhat</option>
+            <option value="other">other</option>
+          </select>
+        </label>
+        <label class="image-meta-label"
+          >Default username
+          <input
+            name="default_username"
+            required
+            class="image-meta-control image-meta-control--mono"
+          />
+        </label>
+        <label class="image-meta-label"
+          >os_variant
+          <input name="os_variant" required class="image-meta-control image-meta-control--mono" />
+        </label>
+        <label class="image-meta-label"
+          >machine_type
+          <input
+            name="machine_type"
+            placeholder="(default)"
+            class="image-meta-control image-meta-control--mono"
+          />
+        </label>
+        <label class="image-meta-label"
+          >cloud_init_profile
+          <input
+            name="cloud_init_profile"
+            placeholder="(default)"
+            class="image-meta-control image-meta-control--mono"
+          />
+        </label>
+        <label class="image-meta-label"
+          >inject_network_config
+          <select name="inject_network_config" class="image-meta-control">
+            <option value="">(default)</option>
+            <option value="true">true</option>
+            <option value="false">false</option>
+          </select>
+        </label>
+      </div>
+      <div class="row row--end image-meta-actions">
+        <button type="button" class="wiz-btn wiz-btn--ghost" data-close-image-meta-modal>
+          Cancel
+        </button>
+        <button type="submit" class="wiz-btn wiz-btn--primary">Save</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script nonce="{{ request.state.csp_nonce }}">
+  (function () {
+    // Every unsafe method is gated by the app-wide CSRF dependency. csrf.js
+    // publishes the header helper on window for classic and inline scripts like
+    // this one; read it per request, never at load time.
+    const csrf = (method, headers) =>
+      window.csrfHeaders ? window.csrfHeaders(method, headers) : headers || {};
+
+    // Download settings policy UI
+    function updatePolicyUI() {
+      const src = document.getElementById('source-policy').value;
+      const net = document.getElementById('network-policy').value;
+      document.getElementById('allowlist-panel').classList.toggle('is-visible', src === 'allowlist');
+      document.getElementById('ssrf-warning').classList.toggle('is-visible', src === 'unrestricted' && net === 'unrestricted');
+    }
+    document.getElementById('source-policy').addEventListener('change', updatePolicyUI);
+    document.getElementById('network-policy').addEventListener('change', updatePolicyUI);
+    document.addEventListener('DOMContentLoaded', updatePolicyUI);
+
+    // Drop-zone file picker
+    var NO_FILE = {{ t.btn_select_file | tojson }};
+    document.getElementById('img-file').addEventListener('change', function () {
+      const n = this.files[0]?.name;
+      document.getElementById('img-fname').textContent = n || NO_FILE;
+      const z = document.getElementById('drop-zone');
+      z.classList.toggle('is-selected', Boolean(n));
+    });
+
+    const openImageMetaModal = async function(filename) {
+      const invoker = document.activeElement;
+      try {
+      const r = await fetch(`/admin/images/${encodeURIComponent(filename)}/metadata`);
+      if (!r.ok) throw new Error('metadata load failed');
+      const m = await r.json();
+      const f = document.getElementById('img-meta-form');
+      f.dataset.filename = filename;
+      document.getElementById('img-meta-filename').textContent = filename;
+      f.distro.value = m.distro || '';
+      f.version.value = m.version || '';
+      f.family.value = m.family || 'debian';
+      f.default_username.value = m.default_username || '';
+      f.os_variant.value = m.os_variant || '';
+      f.machine_type.value = m.machine_type || '';
+      f.cloud_init_profile.value = m.cloud_init_profile || '';
+      f.inject_network_config.value = m.inject_network_config === null || m.inject_network_config === undefined
+        ? '' : String(m.inject_network_config);
+      window.AlDialog.open(document.getElementById('img-meta-modal'), { openClass: 'is-visible', initial: '[name=distro]', returnTo: invoker });
+      } catch (_) { showImageVaultStatus('Could not load metadata. Please retry.', 'error'); }
+    };
+
+    const closeImageMetaModal = function() {
+      window.AlDialog.close();
+    };
+
+    const showImageVaultStatus = function(message, type = 'info') {
+      const el = document.querySelector('[data-image-vault-status]');
+      if (!el) return;
+      el.textContent = message;
+      el.hidden = false;
+      el.classList.toggle('is-error', type === 'error');
+    };
+
+    const saveImageMeta = async function(ev) {
+      ev.preventDefault();
+      const f = ev.target;
+      const filename = f.dataset.filename;
+      const inject = f.inject_network_config.value;
+      const payload = {
+        distro: f.distro.value.trim(),
+        version: f.version.value.trim(),
+        family: f.family.value,
+        default_username: f.default_username.value.trim(),
+        os_variant: f.os_variant.value.trim(),
+        machine_type: f.machine_type.value.trim() || null,
+        cloud_init_profile: f.cloud_init_profile.value.trim() || null,
+        inject_network_config: inject === '' ? null : inject === 'true',
+      };
+      const button = f.querySelector('button[type=submit]');
+      button.disabled = true;
+      try {
+      const r = await fetch(`/admin/images/${encodeURIComponent(filename)}/metadata`, {
+        method: 'PUT',
+        headers: csrf('PUT', { 'Content-Type': 'application/json' }),
+        body: JSON.stringify(payload),
+      });
+      if (!r.ok) throw new Error('metadata save failed');
+      await r.json();
+      showImageVaultStatus('Metadata saved. Reloading image vault…');
+      closeImageMetaModal();
+      location.reload();
+      } catch (_) {
+        showImageVaultStatus('Metadata save failed. Please retry.', 'error');
+        let error = f.querySelector('[role=alert]');
+        if (!error) { error = document.createElement('p'); error.setAttribute('role', 'alert'); f.prepend(error); }
+        error.textContent = 'Metadata save failed. Please retry.';
+      } finally { button.disabled = false; }
+      return false;
+    };
+
+    const reinspectImage = async function(filename, btn) {
+      btn.disabled = true; btn.textContent = 'Detecting…';
+      showImageVaultStatus(`Inspection queued for ${filename}.`);
+      try {
+        const r = await fetch(`/admin/images/${encodeURIComponent(filename)}/inspect`, {
+          method: 'POST', headers: csrf('POST'),
+        });
+        if (!r.ok) throw new Error('Could not start inspection');
+        await r.json();
+        const tick = async () => {
+          try {
+            const s = await fetch(`/admin/images/${encodeURIComponent(filename)}/inspection`);
+            if (!s.ok) throw new Error('Inspection status unavailable');
+            const j = await s.json();
+            if (j.status === 'done') location.reload();
+            else if (j.status === 'error') throw new Error(j.error || 'Inspection failed');
+            else setTimeout(tick, 700);
+          } catch (_) {
+            showImageVaultStatus(`Could not read inspection status for ${filename}. Please retry.`, 'error');
+            btn.disabled = false; btn.textContent = 'Re-inspect';
+          }
+        };
+        await tick();
+      } catch (_) {
+        showImageVaultStatus(`Could not start inspection for ${filename}. Please retry.`, 'error');
+        btn.disabled = false; btn.textContent = 'Re-inspect';
+      }
+    };
+
+    document.addEventListener('click', function (event) {
+      const folderButton = event.target.closest('[data-open-images-folder]');
+      if (folderButton) {
+        showImageVaultStatus('Opening images folder on host…');
+        fetch('/images/open-folder', { method: 'POST', headers: csrf('POST') })
+          .then(async function(response) {
+            if (!response.ok) {
+              const body = await response.json().catch(function() { return {}; });
+              throw new Error(body.detail || 'Could not open images folder.');
+            }
+            showImageVaultStatus('Images folder open request sent.');
+          })
+          .catch(function(error) { showImageVaultStatus(error.message || 'Could not open images folder.', 'error'); });
+        return;
+      }
+
+      const closeButton = event.target.closest('[data-close-image-meta-modal]');
+      if (closeButton) {
+        closeImageMetaModal();
+        return;
+      }
+
+      const metaButton = event.target.closest('[data-image-meta-filename]');
+      if (metaButton) {
+        openImageMetaModal(metaButton.dataset.imageMetaFilename);
+        return;
+      }
+
+      const reinspectButton = event.target.closest('[data-reinspect-image-filename]');
+      if (reinspectButton) {
+        reinspectImage(reinspectButton.dataset.reinspectImageFilename, reinspectButton);
+      }
+    });
+
+    document.getElementById('img-meta-form').addEventListener('submit', saveImageMeta);
+
+    document.addEventListener('htmx:afterRequest', function (event) {
+      if (event.detail.successful && event.target.matches('[data-reset-after-success]')) {
+        event.target.reset();
+      }
+    });
+  })();
+</script>
+{% endblock %}

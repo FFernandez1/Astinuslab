@@ -1,0 +1,118 @@
+<div id="live-status"
+  aria-live="polite"
+  aria-atomic="false"
+  {% if is_active %}
+  hx-get="/jobs/{{ job.id }}/live-status-fragment?revision={{ live_revision }}"
+  hx-trigger="every 3s"
+  hx-swap="outerHTML"
+  {% endif %}
+>
+  {# ── Status/progress card ── #}
+  {% set _show_phase_stepper = (is_active or job.status == 'completed') and job.status not in ('failed', 'cancelled', 'cancel_requested', 'waiting_for_capacity') %}
+  {% if _show_phase_stepper %}
+    {# Determine current phase index #}
+    {% if job.status == 'completed' %}
+      {% set _ph = 4 %}
+    {% elif job.status == 'capture_requested' or job.current_stage in ('acquiring_memory', 'acquiring_disk', 'publishing_artifact') %}
+      {% set _ph = 3 %}
+    {% elif job.status == 'waiting_for_capture' %}
+      {% set _ph = 2 %}
+    {% elif job.current_stage in ('provisioning_workload', 'running_scenario_script') %}
+      {% set _ph = 1 %}
+    {% else %}
+      {% set _ph = 0 %}
+    {% endif %}
+
+    {# Choose steps based on job type #}
+    {% if workload %}
+      {% set _steps = [(t.phase_boot or 'Boot', 0), (t.phase_provision or 'Provision', 1), (t.phase_lab_ready or 'Lab Ready', 2), (t.phase_capture or 'Capture', 3), (t.phase_done or 'Done', 4)] %}
+    {% elif job.execution_mode == 'post_script' %}
+      {% set _steps = [(t.phase_boot or 'Boot', 0), (t.phase_script or 'Script', 1), (t.phase_capture or 'Capture', 3), (t.phase_done or 'Done', 4)] %}
+    {% else %}
+      {% set _steps = [(t.phase_boot or 'Boot', 0), (t.phase_capture or 'Capture', 3), (t.phase_done or 'Done', 4)] %}
+    {% endif %}
+  {% endif %}
+
+  <div class="card job-progress-card">
+    {% if _show_phase_stepper %}
+      <div class="phase-stepper" aria-label="Job progress">
+        {% for label, idx in _steps %}
+          <div class="phase-step {% if _ph > idx %}is-done{% elif _ph == idx %}is-active{% endif %}"{% if _ph == idx %} aria-current="step"{% endif %}>
+            <div class="phase-step__bar"></div>
+            <div class="phase-step__label">{{ label }}</div>
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    <div class="flex job-progress-status">
+      {% if is_active %}<span class="spinner"></span>{% endif %}
+      <span class="badge badge-{{ job.status }}" data-live-status-label>{% include "partials/job_status_label.html" %}</span>
+      {% if job.current_stage and job.status != 'waiting_for_capacity' %}
+        <span class="stage-label">{{ job.current_stage.replace('_', ' ') }}</span>
+      {% endif %}
+
+      {% if can_cancel and job.status != 'waiting_for_capture' %}
+        <form action="/jobs/{{ job.id }}/cancel" method="post" class="ml-auto">
+          {% include "partials/csrf_input.html" %}
+          <button type="submit" class="wiz-btn wiz-btn--danger">{{ t.btn_cancel }}</button>
+        </form>
+      {% endif %}
+
+      {% if job.status == 'waiting_for_capture' and not workload %}
+        <form action="/jobs/{{ job.id }}/cancel" method="post" class="ml-auto">
+          {% include "partials/csrf_input.html" %}
+          <button type="submit" class="wiz-btn wiz-btn--danger">{{ t.btn_cancel }}</button>
+        </form>
+      {% endif %}
+
+      {% if job.status == 'cancel_requested' %}
+        <form action="/jobs/{{ job.id }}/force-kill" method="post" class="ml-auto"
+              data-confirm="{{ t.confirm_force_kill }}">
+          {% include "partials/csrf_input.html" %}
+          <button type="submit" class="wiz-btn wiz-btn--danger">{{ t.btn_force_kill }}</button>
+        </form>
+      {% endif %}
+    </div>
+    {% include "partials/job_capacity_reason.html" %}
+  </div>
+
+  {# ── Event log ── #}
+  <div class="card">
+    <h2 class="card-title">{{ t.event_log_title }}</h2>
+    {% if events %}
+      <div class="log-entries">
+        {% for event in events %}
+          <div class="log-entry">
+            <span class="log-time">{{ event.created_at.strftime('%H:%M:%S') }}</span>
+            <span class="log-state">{{ event.state }}</span>
+            <span class="log-msg">{{ event.message.splitlines()[-30:] | join('\n') }}</span>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="empty-state">{{ t.no_events }}</p>
+    {% endif %}
+  </div>
+
+  {# ── Host Actions ── #}
+  {% if actions %}
+    <div class="card">
+      <h2 class="card-title">{{ t.host_actions_title }}</h2>
+      <div class="log-entries">
+        {% for action in actions %}
+          <div class="log-entry">
+            <span class="log-time">{{ action.created_at.strftime('%H:%M:%S') }}</span>
+            <span class="log-state">{{ action.action_type }}</span>
+            <span class="badge badge-{{ action.status }} badge--xs">{{ action.status }}</span>
+            {% if action.active_pid %}
+              <span class="log-msg">PID {{ action.active_pid }}</span>
+            {% elif action.error_summary %}
+              <span class="log-msg text-danger">{{ action.error_summary[:80] }}</span>
+            {% endif %}
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  {% endif %}
+</div>

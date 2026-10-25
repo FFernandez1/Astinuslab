@@ -1,0 +1,5 @@
+{%- if job.status == 'waiting_for_capacity' -%}
+  {{ t.job_waiting_for_capacity or 'Waiting for capacity' }}
+{%- else -%}
+  {{ job.status.replace('_', ' ') }}
+{%- endif -%}

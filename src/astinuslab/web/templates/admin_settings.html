@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}{{ t.nav_settings }} — AstinusLab{% endblock %}
+{% block head %}<link rel="stylesheet" href="/static/css/pages/settings.css?v={{ asset_v }}">{% endblock %}
+
+{% block content %}
+<div class="wiz-shell settings-host-ops">
+  <div class="wiz-body">
+    <main class="wiz-main">
+      <div class="page-head">
+        <div>
+          <h1 class="page-head__title">{{ t.settings_page_title }}</h1>
+          <p class="page-head__sub">{{ t.settings_page_intent }}</p>
+        </div>
+        <div class="page-head__actions">
+          <div class="settings-path-pill" title="{{ base_dir }}">{{ t.settings_storage_root_prefix }} · {{ base_dir }}</div>
+        </div>
+      </div>
+
+      <div id="settings-toasts" class="settings-toasts" role="status" aria-live="polite"></div>
+
+      {% if fake_mode and fake_mode.active %}
+        <div class="settings-pressure-banner" role="alert">{{ fake_mode.banner }}</div>
+      {% endif %}
+
+      {% include "partials/settings_services.html" %}
+
+      {% include "partials/settings_network.html" %}
+
+      {% include "partials/settings_activity.html" %}
+
+      {% include "partials/settings_storage.html" %}
+    </main>
+  </div>
+</div>
+{% endblock %}

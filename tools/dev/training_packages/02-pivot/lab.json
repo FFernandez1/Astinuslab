@@ -1,0 +1,125 @@
+{
+  "format_version": 1,
+  "package_id": "training-pivot",
+  "version": "0.1.0-draft",
+  "title": "Three Targets: pivot into an isolated network",
+  "description": "DRAFT: dual-interface vulnerable pivot plus internal web and database Targets. The external Attacker is excluded from the package inventory.",
+  "creator": "AstinusLab training package authors",
+  "license": "LicenseRef-Volatility-Software-License-1.0",
+  "reproducibility": "unlocked",
+  "resources": {
+    "minimum": {
+      "cpu_threads": 4,
+      "memory_mb": 8192,
+      "free_disk_bytes": 68719476736
+    },
+    "recommended": {
+      "cpu_threads": 6,
+      "memory_mb": 12288,
+      "free_disk_bytes": 103079215104
+    }
+  },
+  "networks": [
+    {
+      "id": "entry",
+      "subnet_cidr": "10.77.20.0/24",
+      "reachability": "isolated",
+      "isolated": true,
+      "guest_egress": false,
+      "host_bridge": null
+    },
+    {
+      "id": "internal",
+      "subnet_cidr": "10.77.21.0/24",
+      "reachability": "isolated",
+      "isolated": true,
+      "guest_egress": false,
+      "host_bridge": null
+    }
+  ],
+  "vms": [
+    {
+      "id": "pivot",
+      "role": "target",
+      "image_id": "training-dvwa-pivot",
+      "architecture": "x86_64",
+      "firmware": "bios",
+      "workload_id": null,
+      "vcpus": 2,
+      "memory_mb": 2048,
+      "disk_gb": 16,
+      "network_ids": [
+        "entry",
+        "internal"
+      ]
+    },
+    {
+      "id": "internal-web",
+      "role": "target",
+      "image_id": "training-internal-web",
+      "architecture": "x86_64",
+      "firmware": "bios",
+      "workload_id": null,
+      "vcpus": 1,
+      "memory_mb": 1024,
+      "disk_gb": 12,
+      "network_ids": [
+        "internal"
+      ]
+    },
+    {
+      "id": "internal-db",
+      "role": "target",
+      "image_id": "training-internal-db",
+      "architecture": "x86_64",
+      "firmware": "bios",
+      "workload_id": null,
+      "vcpus": 1,
+      "memory_mb": 1024,
+      "disk_gb": 12,
+      "network_ids": [
+        "internal"
+      ]
+    }
+  ],
+  "topology": [],
+  "experience": {
+    "runbook_path": "experience/runbook.md",
+    "objectives": [
+      "Establish a foothold on the vulnerable pivot.",
+      "Prove direct entry-to-internal access fails while internal services are healthy.",
+      "Reach the internal HTTP and database services through a tunnel, then remove it."
+    ],
+    "hints": [
+      "Only the pivot has two network interfaces.",
+      "No IP forwarding or pre-existing tunnel is enabled at baseline.",
+      "Perform the isolation tests from the entry client, not the host."
+    ],
+    "checkpoints": [
+      {
+        "operation": "assert",
+        "scope": "guest",
+        "vm_id": "pivot",
+        "path": "readiness.json",
+        "expected": "v1:training-dvwa-pivot:ready",
+        "timeout_seconds": 30
+      },
+      {
+        "operation": "assert",
+        "scope": "guest",
+        "vm_id": "internal-web",
+        "path": "readiness.json",
+        "expected": "v1:training-internal-web:ready",
+        "timeout_seconds": 30
+      },
+      {
+        "operation": "assert",
+        "scope": "guest",
+        "vm_id": "internal-db",
+        "path": "readiness.json",
+        "expected": "v1:training-internal-db:ready",
+        "timeout_seconds": 30
+      }
+    ]
+  }
+}

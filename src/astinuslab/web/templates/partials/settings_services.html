@@ -1,0 +1,46 @@
+<div id="settings-services" hx-get="/settings/fragment/services" hx-trigger="every 10s" hx-swap="outerHTML" class="settings-card settings-card--runtime">
+  <div class="settings-card__head">
+    <div class="settings-card__title"><span class="dot"></span><span>{{ t.settings_runtime_title }}</span></div>
+    <div class="settings-card__note">systemd · {{ services|length }} {{ t.settings_units_suffix }}</div>
+  </div>
+
+  <div class="settings-service-list">
+    {% for svc in services %}
+      <div class="settings-service-row">
+        <div class="settings-service-main">
+          <div class="settings-service-name">
+            <span class="settings-status-dot {% if svc.state == 'running' %}settings-status-dot--ok{% else %}settings-status-dot--bad{% endif %}"></span>
+            <span>{{ svc.label }}</span>
+            <span class="settings-service-state {% if svc.state == 'running' %}settings-service-state--ok{% else %}settings-service-state--bad{% endif %}">{{ svc.state }}</span>
+          </div>
+          <div class="settings-service-desc">{{ svc.description }}</div>
+        </div>
+        <div class="settings-service-meta">
+          <span>{{ t.settings_unit_label }} {{ svc.unit }}</span>
+          {% if svc.pid %}<span>{{ t.settings_pid_label }} {{ svc.pid }}</span>{% endif %}
+          {% if svc.uptime_s is not none %}<span>{{ t.settings_uptime_label }} {{ format_uptime(svc.uptime_s) }}</span>{% endif %}
+        </div>
+        <div class="settings-service-actions">
+          <form hx-post="/settings/services/{{ svc.id }}/restart" hx-target="#settings-services" hx-swap="outerHTML" hx-indicator="find .htmx-indicator" hx-disabled-elt="find button" class="settings-inline-form">
+            <button type="submit" class="wiz-btn wiz-btn--ghost">
+              <span class="spinner htmx-indicator" aria-hidden="true"></span>
+              {{ t.settings_restart_button or "Restart" }}
+            </button>
+          </form>
+          <form hx-post="/settings/services/{{ svc.id }}/stop" hx-target="#settings-services" hx-swap="outerHTML"
+                hx-indicator="find .htmx-indicator"
+                hx-disabled-elt="find button"
+                hx-confirm="{{ t.settings_stop_confirm or 'Stop this daemon? Stopping astinuslab-api ends console access until it is restarted from the host.' }}"
+                class="settings-inline-form">
+            <button type="submit" class="wiz-btn wiz-btn--ghost settings-danger-button">
+              <span class="spinner htmx-indicator" aria-hidden="true"></span>
+              {{ t.settings_stop_button }}
+            </button>
+          </form>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+
+  {% if toast %}{% include "partials/settings_toast.html" %}{% endif %}
+</div>

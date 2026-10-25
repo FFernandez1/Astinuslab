@@ -1,0 +1,73 @@
+version: 2
+
+# Dependabot opens the update PRs; the `dependency-audit` job in ci.yml is the
+# gate that fails when something vulnerable is already pinned. They cover
+# different halves of the same problem — one proposes upgrades on a schedule,
+# the other blocks a merge — so neither replaces the other.
+updates:
+  # pip picks up pyproject.toml and both lockfiles in the repository root.
+  # requirements-dev.lock holds two pins ahead of what `uv pip compile`
+  # resolves (see the note at the top of that file); review Dependabot PRs that
+  # touch starlette or python-multipart against those annotations before
+  # merging, so an upgrade PR cannot quietly walk them back.
+  - package-ecosystem: pip
+    directory: "/"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      # One PR per class of change rather than per package: the test suite has
+      # to run against any of these anyway, and a single grouped PR is one CI
+      # run instead of a dozen.
+      python-runtime:
+        applies-to: version-updates
+        patterns:
+          - "fastapi"
+          - "starlette"
+          - "uvicorn"
+          - "pydantic*"
+          - "sqlalchemy"
+          - "alembic"
+          - "celery"
+          - "kombu"
+          - "libvirt-python"
+      python-dev:
+        applies-to: version-updates
+        patterns:
+          - "pytest*"
+          - "ruff"
+          - "mypy"
+          - "types-*"
+          - "coverage"
+          - "httpx*"
+      python-security:
+        applies-to: security-updates
+        patterns:
+          - "*"
+
+  - package-ecosystem: npm
+    directory: "/"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      npm-dev:
+        applies-to: version-updates
+        patterns:
+          - "*"
+      npm-security:
+        applies-to: security-updates
+        patterns:
+          - "*"
+
+  # The workflows pin actions by major tag (@v4, @v5), which floats within a
+  # major but never crosses one. Without this, a v5 → v6 release is invisible
+  # until something breaks.
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+    groups:
+      actions:
+        patterns:
+          - "*"

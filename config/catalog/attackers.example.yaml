@@ -1,0 +1,28 @@
+version: 1
+
+# Attacker VM catalog — machines used as the offensive side in lab sessions.
+# Each entry must reference a cloud image in the images/ directory.
+# If the image file does not exist, the entry is automatically disabled.
+#
+# Recommended approach:
+#   pre-bake an attacker base image with SSH enabled before using it here.
+#   See docs/user/PREBAKED_IMAGES.md
+#
+# Example source images:
+#   kali-linux-2025.4-qemu-amd64.qcow2
+#   parrot-security-6.2_amd64.qcow2
+
+attackers:
+  - id: kali
+    display_name: "Kali Linux 2025.4 (prebaked attacker base)"
+    image_ref: kali-linux-2025.4-attacker-base.qcow2
+    username: kali
+    os_variant: generic
+    enabled: true
+
+  - id: parrot
+    display_name: "Parrot Security OS 6.2"
+    image_ref: parrot-security-6.2_amd64.qcow2
+    username: user
+    os_variant: generic
+    enabled: true

@@ -1,0 +1,16 @@
+#cloud-config
+preserve_hostname: false
+fqdn: astinuslab.local
+
+users:
+  - default
+  - name: ubuntu
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    groups: users, adm
+    shell: /bin/bash
+    lock_passwd: true
+    ssh_authorized_keys:
+      - ssh-ed25519 REPLACE_WITH_LAB_PUBLIC_KEY
+
+ssh_pwauth: false
+disable_root: true

@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+{% block title %}Workloads — AstinusLab{% endblock %}
+{% block head %}<link rel="stylesheet" href="/static/css/pages/workloads.css?v={{ asset_v }}">{% endblock %}
+
+{% block content %}
+<div class="wiz-shell">
+  <div class="wiz-body">
+    <main class="wiz-main">
+
+      <div class="page-head">
+        <div>
+          <h1 class="page-head__title">{{ t.nav_workloads or "Workloads" }}</h1>
+          <p class="page-head__sub">{{ t.workload_admin_subtitle or "Manage service templates, search by service or version and edit the catalog without leaving the interface." }}</p>
+        </div>
+        <div class="page-head__actions">
+          <a href="/workloads?edit=new" class="wiz-btn wiz-btn--primary">{{ t.btn_new_template or "+ New template" }}</a>
+        </div>
+      </div>
+
+      <div class="workload-admin-layout">
+        <section class="wiz-vm-col wiz-vm-col--info wiz-vm-col--stack">
+          <div class="wiz-vm-col__head">
+            <span class="dot"></span><span>{{ t.workload_search_label or "SEARCH" }}</span>
+          </div>
+          <form method="get" action="/workloads" class="workload-search-form">
+            <div class="form-group">
+              <label for="workload-search" class="field-label">{{ t.workload_search_label or "Search workloads" }}</label>
+              <input id="workload-search" type="text" name="q" value="{{ search_query }}"
+                     placeholder="{{ t.workload_search_placeholder or 'service, version, workload id, tag or CVE' }}"
+                     class="control-mono">
+            </div>
+            {% if editing_workload %}
+              <input type="hidden" name="edit" value="{{ editing_workload.id }}">
+            {% endif %}
+            <button type="submit" class="wiz-btn wiz-btn--primary">{{ t.btn_search or "Search" }}</button>
+            {% if search_query %}
+              <a href="/workloads" class="wiz-btn wiz-btn--ghost">{{ t.btn_clear or "Clear" }}</a>
+            {% endif %}
+          </form>
+
+          {% if all_service_names %}
+            <div class="workload-filter-group">
+              <span class="workload-filter-group__label">{{ t.workload_popular_services or "Popular services" }}:</span>
+              {% for service in all_service_names[:8] %}
+                <a href="/workloads?q={{ service }}{% if editing_workload %}&edit={{ editing_workload.id }}{% endif %}"
+                   class="wiz-chip link-plain">{{ service }}</a>
+              {% endfor %}
+            </div>
+          {% endif %}
+
+          <div class="workload-results-header workload-results-header--bordered">
+            <span class="text-xs text-body">{{ workloads|length }} {{ t.workload_count_one if workloads|length == 1 else t.workload_count_many }}</span>
+            <span class="text-2xs text-muted">{{ t.workload_results_note or "Results are grouped around exposed services, not raw catalog noise." }}</span>
+          </div>
+
+          {% if not workloads %}
+            <div class="vault-empty-state">
+              {{ t.workload_no_results or "No workload templates matched" }} <strong>{{ search_query }}</strong>.
+            </div>
+          {% else %}
+            <div class="workload-list">
+              {% for w in workloads %}
+                <article class="workload-list-item{% if editing_workload and editing_workload.id == w.id %} is-selected{% endif %}">
+                  <div class="row row--between row--start">
+                    <div class="workload-list-item__title grow">
+                      <a href="/workloads?edit={{ w.id }}{% if search_query %}&q={{ search_query }}{% endif %}" class="text-body link-plain">{{ w.display_name }}</a>
+                      <span class="wiz-badge wiz-badge--info">{{ w.id }}</span>
+                      {% if w.is_stack %}
+                        <span class="wiz-badge wiz-badge--purple">{{ t.stack_badge or "stack" }}</span>
+                      {% endif %}
+                    </div>
+                    <div class="row">
+                      <a href="/workloads?edit={{ w.id }}{% if search_query %}&q={{ search_query }}{% endif %}" class="wiz-btn wiz-btn--secondary wiz-btn--xs">{{ t.btn_edit or "Edit" }}</a>
+                      <form method="post" action="/workloads/delete" class="inline-form" data-confirm="{{ (t.confirm_delete_workload or 'Delete') ~ ' ' ~ w.id ~ '?' }}">
+                        {% include "partials/csrf_input.html" %}
+                        <input type="hidden" name="workload_id" value="{{ w.id }}">
+                        <button type="submit" class="wiz-btn wiz-btn--danger wiz-btn--xs">{{ t.btn_delete or "Delete" }}</button>
+                      </form>
+                    </div>
+                  </div>
+
+                  {% if w.service_labels or w.tags %}
+                    <div class="workload-service-list">
+                      {% for label in w.service_labels %}
+                        <span class="wiz-badge wiz-badge--neutral">{{ label }}</span>
+                      {% endfor %}
+                      {% for tag in w.tags %}
+                        <span class="wiz-badge wiz-badge--success">{{ tag }}</span>
+                      {% endfor %}
+                    </div>
+                  {% endif %}
+
+                  {% if w.is_stack and w.components %}
+                    <div class="workload-stack-components">
+                      {{ t.stack_components_label or "Components" }}:
+                      {% for comp_id in w.components %}
+                        <span class="wiz-badge wiz-badge--purple">{{ comp_id }}</span>
+                      {% endfor %}
+                    </div>
+                  {% endif %}
+                </article>
+              {% endfor %}
+            </div>
+          {% endif %}
+        </section>
+
+        <section class="wiz-vm-col wiz-vm-col--target wiz-vm-col--stack">
+          <div class="wiz-vm-col__head">
+            <span class="dot"></span>
+            <span>{% if editing_workload %}{{ t.workload_editor_title_edit or "Edit template" }}{% else %}{{ t.workload_editor_title_new or "New template" }}{% endif %}</span>
+            {% if editing_workload %}
+              <a href="/workloads?edit=new{% if search_query %}&q={{ search_query }}{% endif %}" class="wiz-btn wiz-btn--secondary wiz-btn--xs ml-auto">{{ t.btn_new or "New" }}</a>
+            {% endif %}
+          </div>
+          <p class="workload-editor-note">{{ t.workload_editor_changes_written or "Changes are written to" }} <code class="mono text-body">{{ catalog_write_path }}</code>.</p>
+
+          <form method="post" action="/workloads/save">
+            {% include "partials/csrf_input.html" %}
+            <input type="hidden" name="original_id" value="{{ editing_workload.id if editing_workload else '' }}">
+            <div class="mb-3">
+              <label for="editor_yaml" class="field-label">{{ t.workload_yaml_label or "Template YAML" }}</label>
+              <textarea id="editor_yaml" name="editor_yaml" class="workload-editor"
+                        >{{ editor_yaml }}</textarea>
+            </div>
+            <div class="workload-tip">
+              {{ t.workload_tip or "Tip: add <code>version</code> under each service so the <em>new job</em> cards can show exactly what the lab exposes." }}
+            </div>
+            <div class="row row--wrap">
+              <button type="submit" class="wiz-btn wiz-btn--primary">{{ t.btn_save_template or "Save template" }}</button>
+              {% if editing_workload %}
+                <a href="/workloads?edit={{ editing_workload.id }}" class="wiz-btn wiz-btn--secondary">{{ t.btn_reset_editor or "Reset editor" }}</a>
+              {% endif %}
+            </div>
+          </form>
+        </section>
+      </div>
+
+    </main>
+  </div>
+</div>
+{% endblock %}

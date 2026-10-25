@@ -1,0 +1,112 @@
+<div id="settings-storage" class="settings-storage-section">
+
+  {% set stats = storage.stats %}
+  {% set ret = storage.retention %}
+  {% set guard = storage.guardrail or {'min_free_gib': 0, 'under_pressure': False} %}
+
+  <div class="settings-card settings-card--storage">
+    <div class="settings-card__head">
+      <div class="settings-card__title"><span class="dot"></span><span>{{ t.settings_storage_title }}</span></div>
+      <div class="settings-card__note"><span title="{{ base_dir }}">{{ t.settings_retention_label }}</span></div>
+    </div>
+
+    {% if guard and guard.under_pressure %}
+      <div class="settings-pressure-banner" role="alert">
+        {{ t.settings_pressure_warning or "Low disk: free space is below the guardrail — new jobs are blocked until space is freed." }}
+        ({{ '%.1f'|format(stats.free_gb) }} GiB {{ t.settings_free_label }} · min {{ guard.min_free_gib }} GiB)
+      </div>
+    {% endif %}
+
+    <form class="settings-retention-form" hx-target="#settings-storage" hx-swap="outerHTML">
+      <span class="settings-retention-label">{{ t.settings_retention_label }}</span>
+      <label>
+        <span>{{ t.label_dumps }}</span>
+        <input name="dumps_days" value="{{ ret.dumps_days }}" inputmode="numeric" pattern="[0-9]+">
+        <span>{{ t.days_unit }}</span>
+      </label>
+      <label>
+        <span>{{ t.label_logs }}</span>
+        <input name="logs_days" value="{{ ret.logs_days }}" inputmode="numeric" pattern="[0-9]+">
+        <span>{{ t.days_unit }}</span>
+      </label>
+      <label class="settings-retention-auto">
+        <input type="checkbox" name="auto_enabled" value="1" {% if ret.auto_enabled %}checked{% endif %}>
+        {{ t.settings_retention_auto or "Run automatically (hourly check)" }}
+      </label>
+      <div class="settings-retention-buttons">
+        <button type="submit" class="wiz-btn wiz-btn--ghost" hx-post="/settings/retention/preview" hx-indicator="find .htmx-indicator" hx-disabled-elt="this">
+          <span class="spinner htmx-indicator" aria-hidden="true"></span>
+          {{ t.settings_retention_preview or "Preview" }}
+        </button>
+        <button type="submit" class="wiz-btn wiz-btn--secondary" hx-post="/settings/retention" hx-indicator="find .htmx-indicator" hx-disabled-elt="this">
+          <span class="spinner htmx-indicator" aria-hidden="true"></span>
+          {{ t.settings_save_button or "Save" }}
+        </button>
+        <button type="submit" class="wiz-btn wiz-btn--primary" hx-post="/settings/retention/run"
+                hx-indicator="find .htmx-indicator"
+                hx-disabled-elt="this"
+                hx-confirm="{{ t.settings_retention_run_confirm or 'Save these windows and delete evidence older than them now? This cannot be undone.' }}">
+          <span class="spinner spinner--on-primary htmx-indicator" aria-hidden="true"></span>
+          {{ t.settings_apply_cleanup }}
+        </button>
+      </div>
+    </form>
+
+    {% if ret.last_run_at %}
+      <div class="settings-retention-status">
+        {{ t.settings_retention_last_run or "Last cleanup" }}: {{ ret.last_run_at }} ·
+        {{ t.label_dumps }} {{ ret.last_dumps_deleted | default(0) }} · {{ t.label_logs }} {{ ret.last_logs_deleted | default(0) }}
+      </div>
+    {% endif %}
+
+    <form class="settings-retention-form settings-guardrail-form" hx-post="/settings/guardrail" hx-target="#settings-storage" hx-swap="outerHTML" hx-indicator="find .htmx-indicator" hx-disabled-elt="find button">
+      <span class="settings-retention-label">{{ t.settings_guardrail_label or "Disk guardrail" }}</span>
+      <label>
+        <span>{{ t.settings_guardrail_min_free or "Min free" }}</span>
+        <input name="min_free_gib" value="{{ guard.min_free_gib }}" inputmode="numeric" pattern="[0-9]+">
+        <span>GiB</span>
+      </label>
+      <span class="settings-guardrail-hint">{{ t.settings_guardrail_hint or "Block new jobs below this. 0 disables." }}</span>
+      <button type="submit" class="wiz-btn wiz-btn--secondary">
+        <span class="spinner htmx-indicator" aria-hidden="true"></span>
+        {{ t.settings_save_button or "Save" }}
+      </button>
+    </form>
+
+    <div class="settings-symbols-row">
+      <span class="settings-guardrail-hint">{{ t.settings_symbols_hint or "Volatility symbol/ISF cache rebuilds on the next analysis." }}</span>
+      <form hx-post="/settings/symbols/clear" hx-target="#settings-storage" hx-swap="outerHTML"
+            hx-indicator="find .htmx-indicator"
+            hx-disabled-elt="find button"
+            hx-confirm="{{ t.settings_symbols_clear_confirm or 'Clear the Volatility symbol/ISF cache? The next analysis rebuilds it.' }}"
+            class="settings-inline-form">
+        <button type="submit" class="wiz-btn wiz-btn--ghost">
+          <span class="spinner htmx-indicator" aria-hidden="true"></span>
+          {{ t.settings_symbols_clear or "Clear symbol cache" }}
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <details class="settings-card settings-card--danger settings-danger-zone">
+    <summary>
+      <span class="settings-card__title"><span class="dot"></span><span>{{ t.settings_danger_title }}</span></span>
+      <span class="settings-card__note">{{ t.settings_collapsed_default }}</span>
+    </summary>
+    <div class="settings-danger-body">
+      <div class="settings-danger-hint">{{ t.settings_danger_hint }}</div>
+      <form hx-post="/settings/services/stop-all" hx-target="#settings-services" hx-swap="outerHTML"
+            hx-indicator="find .htmx-indicator"
+            hx-disabled-elt="find button"
+            hx-confirm="{{ t.settings_stop_all_confirm or 'Stop ALL daemons (API + runner)? This ends console access until you restart them from the host.' }}"
+            class="settings-inline-form">
+        <button type="submit" class="wiz-btn wiz-btn--ghost settings-danger-button">
+          <span class="spinner htmx-indicator" aria-hidden="true"></span>
+          {{ t.settings_stop_all_daemons }}
+        </button>
+      </form>
+    </div>
+  </details>
+
+  {% if toast %}{% include "partials/settings_toast.html" %}{% endif %}
+</div>

@@ -1,0 +1,939 @@
+:root {
+  --astinuslab-header-height: 56px;
+  --astinuslab-sidebar-width: 248px;
+  --astinuslab-toc-width: 248px;
+  --astinuslab-content-width: 700px;
+  --astinuslab-radius: 8px;
+  --astinuslab-font: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --astinuslab-mono: "Fira Code", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+[data-md-color-scheme="default"] {
+  --astinuslab-bg: #ffffff;
+  --astinuslab-bg-muted: #fafafa;
+  --astinuslab-panel: #f6f7f8;
+  --astinuslab-fg: #111318;
+  --astinuslab-fg-muted: #5f6672;
+  --astinuslab-fg-subtle: #8b93a1;
+  --astinuslab-border: #e2e5e9;
+  --astinuslab-border-strong: #cfd5dd;
+  --astinuslab-accent: #2f8f5b;
+  --astinuslab-blue: #2563eb;
+  --md-default-bg-color: var(--astinuslab-bg);
+  --md-default-fg-color: var(--astinuslab-fg);
+  --md-default-fg-color--light: var(--astinuslab-fg-muted);
+  --md-primary-fg-color: var(--astinuslab-bg);
+  --md-primary-bg-color: var(--astinuslab-fg);
+  --md-accent-fg-color: var(--astinuslab-accent);
+  --md-code-bg-color: #f3f5f7;
+}
+
+[data-md-color-scheme="slate"] {
+  --astinuslab-bg: #0b0d10;
+  --astinuslab-bg-muted: #101318;
+  --astinuslab-panel: #151922;
+  --astinuslab-fg: #f2f4f7;
+  --astinuslab-fg-muted: #a7b0bd;
+  --astinuslab-fg-subtle: #737d8c;
+  --astinuslab-border: #262c36;
+  --astinuslab-border-strong: #384150;
+  --astinuslab-accent: #3ecf7a;
+  --astinuslab-blue: #6aa5ff;
+  --md-default-bg-color: var(--astinuslab-bg);
+  --md-default-fg-color: var(--astinuslab-fg);
+  --md-default-fg-color--light: var(--astinuslab-fg-muted);
+  --md-primary-fg-color: var(--astinuslab-bg);
+  --md-primary-bg-color: var(--astinuslab-fg);
+  --md-accent-fg-color: var(--astinuslab-accent);
+  --md-code-bg-color: #141922;
+}
+
+html,
+body,
+.md-typeset {
+  font-family: var(--astinuslab-font);
+}
+
+code,
+kbd,
+pre,
+.md-typeset code {
+  font-family: var(--astinuslab-mono);
+}
+
+.astinuslab-topbar {
+  background: color-mix(in srgb, var(--astinuslab-bg) 94%, transparent) !important;
+  border-bottom: 1px solid var(--astinuslab-border);
+  box-shadow: none !important;
+  color: var(--astinuslab-fg);
+  height: var(--astinuslab-header-height);
+  position: fixed;
+  top: 0;
+  width: 100%;
+  z-index: 100;
+}
+
+.astinuslab-topbar__inner {
+  align-items: center;
+  display: flex;
+  gap: 22px;
+  height: var(--astinuslab-header-height);
+  max-width: none;
+  padding: 0 24px;
+}
+
+.astinuslab-brand {
+  align-items: center;
+  color: var(--astinuslab-fg) !important;
+  display: inline-flex;
+  flex-shrink: 0;
+  gap: 10px;
+  height: var(--astinuslab-header-height);
+  margin: 0;
+  padding: 0;
+}
+
+.astinuslab-brand img,
+.astinuslab-brand svg {
+  height: 24px;
+  width: auto;
+}
+
+.astinuslab-brand__name {
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+.astinuslab-drawer {
+  display: none;
+}
+
+.md-header__title,
+.md-header__topic {
+  display: none;
+}
+
+.astinuslab-nav {
+  background: transparent;
+  display: block;
+  flex: 1 1 auto;
+  height: var(--astinuslab-header-height);
+  overflow: visible;
+  position: static;
+}
+
+.astinuslab-nav__inner,
+.md-tabs__list {
+  align-items: center;
+  display: flex;
+  height: 100%;
+}
+
+.astinuslab-nav__inner {
+  max-width: none;
+}
+
+.md-tabs__list {
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+}
+
+.md-tabs__item {
+  height: auto;
+}
+
+.md-tabs__link {
+  align-items: center;
+  border-radius: var(--astinuslab-radius);
+  color: var(--astinuslab-fg-muted);
+  display: inline-flex;
+  font-size: 13px;
+  font-weight: 500;
+  height: 34px;
+  letter-spacing: 0;
+  margin: 0;
+  opacity: 1;
+  padding: 0 12px;
+  transition: background-color 160ms ease, color 160ms ease;
+}
+
+.md-tabs__link:hover,
+.md-tabs__link--active {
+  color: var(--astinuslab-fg);
+}
+
+.md-tabs__link:hover {
+  background: var(--astinuslab-panel);
+}
+
+.astinuslab-actions {
+  align-items: center;
+  display: flex;
+  flex-shrink: 0;
+  gap: 10px;
+  margin-left: auto;
+}
+
+.astinuslab-search-trigger {
+  align-items: center;
+  background: var(--astinuslab-bg-muted);
+  border: 1px solid var(--astinuslab-border-strong);
+  border-radius: var(--astinuslab-radius);
+  color: var(--astinuslab-fg-subtle);
+  cursor: pointer;
+  display: flex;
+  font-size: 13px;
+  gap: 9px;
+  height: 34px;
+  line-height: 1;
+  padding: 0 8px 0 10px;
+  transition: border-color 160ms ease, color 160ms ease, background-color 160ms ease;
+  width: 236px;
+}
+
+.astinuslab-search-trigger:hover {
+  background: var(--astinuslab-panel);
+  border-color: var(--astinuslab-fg-subtle);
+  color: var(--astinuslab-fg);
+}
+
+.astinuslab-search-trigger__icon {
+  align-items: center;
+  display: inline-flex;
+  height: 16px;
+  width: 16px;
+}
+
+.astinuslab-search-trigger__icon svg {
+  height: 16px;
+  width: 16px;
+}
+
+.astinuslab-search-trigger__text {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.astinuslab-kbd {
+  align-items: center;
+  border: 1px solid var(--astinuslab-border-strong);
+  border-radius: 5px;
+  color: var(--astinuslab-fg-muted);
+  display: inline-flex;
+  flex-shrink: 0;
+  font-family: var(--astinuslab-mono);
+  font-size: 11px;
+  height: 22px;
+  justify-content: center;
+  min-width: 44px;
+  padding: 0 6px;
+}
+
+.md-header__option {
+  align-items: center;
+  display: flex;
+  height: 34px;
+  margin: 0;
+}
+
+.md-header__option .md-header__button {
+  align-items: center;
+  background: var(--astinuslab-bg-muted);
+  border: 1px solid var(--astinuslab-border-strong);
+  border-radius: var(--astinuslab-radius);
+  color: var(--astinuslab-fg-muted);
+  display: none;
+  height: 34px;
+  justify-content: center;
+  margin: 0;
+  padding: 0;
+  transition: border-color 160ms ease, color 160ms ease, background-color 160ms ease;
+  width: 34px;
+}
+
+.md-header__option .md-header__button:hover {
+  background: var(--astinuslab-panel);
+  border-color: var(--astinuslab-fg-subtle);
+  color: var(--astinuslab-fg);
+}
+
+.md-option:checked + .md-header__button {
+  display: inline-flex;
+}
+
+.md-container {
+  padding-top: var(--astinuslab-header-height);
+}
+
+.md-main__inner {
+  display: grid;
+  gap: 0;
+  grid-template-columns: var(--astinuslab-sidebar-width) minmax(0, 1fr) var(--astinuslab-toc-width);
+  margin: 0;
+  max-width: none;
+  width: 100%;
+}
+
+@media screen and (min-width: 76.25em) {
+  .md-sidebar {
+    height: calc(100vh - var(--astinuslab-header-height));
+    position: sticky;
+    top: var(--astinuslab-header-height);
+  }
+}
+
+.md-sidebar--primary {
+  background: var(--astinuslab-bg-muted);
+  border-right: 1px solid var(--astinuslab-border);
+  width: var(--astinuslab-sidebar-width);
+}
+
+.md-sidebar--secondary {
+  background: var(--astinuslab-bg);
+  border-left: 1px solid var(--astinuslab-border);
+  width: var(--astinuslab-toc-width);
+}
+
+.md-sidebar--primary .md-sidebar__scrollwrap {
+  margin: 0;
+}
+
+.md-sidebar--secondary .md-sidebar__scrollwrap {
+  margin: 0;
+  padding: 34px 18px;
+}
+
+.md-nav--primary {
+  padding: 24px 18px;
+}
+
+.md-nav__title {
+  display: none;
+}
+
+.md-nav__link {
+  border-radius: 6px;
+  color: var(--astinuslab-fg-muted);
+  font-size: 13px;
+  line-height: 1.4;
+  margin-top: 2px;
+  padding: 5px 8px;
+}
+
+.md-nav__link:is(:focus, :hover),
+.md-nav__link--active {
+  color: var(--astinuslab-fg);
+}
+
+.md-nav__link--active {
+  background: color-mix(in srgb, var(--astinuslab-accent) 12%, transparent);
+}
+
+.md-nav__item--section > .md-nav__link,
+.md-nav__item--nested > .md-nav__link {
+  color: var(--astinuslab-fg-subtle);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0;
+  margin: 18px 0 6px;
+  text-transform: uppercase;
+}
+
+.md-content {
+  background: var(--astinuslab-bg);
+  min-width: 0;
+  padding: 46px 48px 96px;
+}
+
+.md-content__inner {
+  margin: 0 auto;
+  max-width: var(--astinuslab-content-width);
+}
+
+.md-typeset {
+  color: var(--astinuslab-fg-muted);
+  font-size: 15px;
+  line-height: 1.75;
+}
+
+.md-typeset h1 {
+  color: var(--astinuslab-fg);
+  font-size: 44px;
+  font-weight: 700;
+  letter-spacing: 0;
+  line-height: 1.12;
+  margin: 0 0 22px;
+}
+
+.md-typeset h2 {
+  border-top: 1px solid var(--astinuslab-border);
+  color: var(--astinuslab-fg);
+  font-size: 24px;
+  font-weight: 650;
+  letter-spacing: 0;
+  margin: 42px 0 14px;
+  padding-top: 28px;
+}
+
+.md-typeset h3 {
+  color: var(--astinuslab-fg);
+  font-size: 18px;
+  font-weight: 650;
+  letter-spacing: 0;
+}
+
+.md-typeset a {
+  color: var(--astinuslab-blue);
+}
+
+.md-typeset hr {
+  border-bottom-color: var(--astinuslab-border);
+}
+
+.md-typeset .admonition,
+.md-typeset details,
+.md-typeset table:not([class]) {
+  border-color: var(--astinuslab-border);
+  border-radius: var(--astinuslab-radius);
+}
+
+.md-search {
+  color: var(--astinuslab-fg);
+}
+
+.md-search__form {
+  background: var(--astinuslab-bg-muted);
+  border: 1px solid var(--astinuslab-border-strong);
+  border-radius: var(--astinuslab-radius);
+  box-shadow: none;
+}
+
+.md-search__input {
+  color: var(--astinuslab-fg);
+  font-family: var(--astinuslab-font);
+  font-size: 14px;
+}
+
+.md-search__output {
+  border: 1px solid var(--astinuslab-border);
+  border-radius: var(--astinuslab-radius);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.18);
+}
+
+.md-footer {
+  display: none;
+}
+
+@media screen and (max-width: 76.1875em) {
+  .astinuslab-drawer {
+    display: inline-flex;
+    order: -1;
+  }
+
+  .astinuslab-brand__name,
+  .astinuslab-nav {
+    display: none !important;
+  }
+
+  .astinuslab-topbar__inner {
+    gap: 12px;
+    padding: 0 16px;
+  }
+
+  .md-main__inner {
+    display: block;
+  }
+
+  .md-content {
+    padding: 36px 24px 80px;
+  }
+}
+
+@media screen and (max-width: 44.9375em) {
+  .astinuslab-search-trigger {
+    justify-content: center;
+    padding: 0;
+    width: 42px;
+  }
+
+  .astinuslab-search-trigger__text,
+  .astinuslab-kbd {
+    display: none;
+  }
+
+  .md-content {
+    padding: 28px 18px 72px;
+  }
+
+  .md-typeset {
+    font-size: 14px;
+  }
+
+  .md-typeset h1 {
+    font-size: 34px;
+  }
+}
+
+/* Preserve the original AstinusLab documentation typography and color system. */
+:root {
+  --ink-000: #0a0b0d;
+  --ink-050: #0f1113;
+  --ink-100: #15181c;
+  --ink-300: #2f353e;
+  --ink-500: #545b66;
+  --ink-600: #777f8b;
+  --ink-700: #a0a7b1;
+  --ink-800: #c8cdd4;
+  --ink-900: #e8eaed;
+
+  --signal-500: #3ecf7a;
+  --cobalt-500: #5aa1ff;
+
+  --font-display: 'Source Serif 4', serif;
+  --font-mono: 'Fira Mono', monospace;
+  --astinuslab-font: var(--font-mono);
+  --astinuslab-mono: var(--font-mono);
+}
+
+[data-md-color-scheme="default"] {
+  --astinuslab-bg: #ffffff;
+  --astinuslab-bg-muted: #f7f8fa;
+  --astinuslab-panel: #f0f2f5;
+  --astinuslab-fg: #15181c;
+  --astinuslab-fg-muted: #545b66;
+  --astinuslab-fg-subtle: #777f8b;
+  --astinuslab-border: #dce1e7;
+  --astinuslab-border-strong: #c8cdd4;
+  --astinuslab-accent: var(--signal-500);
+  --astinuslab-blue: #276ecf;
+
+  --bg-0: var(--astinuslab-bg);
+  --bg-1: var(--astinuslab-bg-muted);
+  --fg-1: var(--astinuslab-fg);
+  --fg-2: #2f353e;
+  --fg-3: var(--astinuslab-fg-muted);
+  --fg-4: var(--astinuslab-fg-subtle);
+  --fg-5: #8b93a1;
+  --border-1: var(--astinuslab-border);
+
+  --md-default-bg-color: var(--bg-0);
+  --md-default-fg-color: var(--fg-2);
+  --md-default-fg-color--light: var(--fg-3);
+  --md-primary-fg-color: var(--bg-0);
+  --md-primary-bg-color: var(--fg-1);
+  --md-accent-fg-color: var(--signal-500);
+  --md-code-bg-color: var(--astinuslab-panel);
+}
+
+[data-md-color-scheme="slate"] {
+  --astinuslab-bg: var(--ink-000);
+  --astinuslab-bg-muted: var(--ink-050);
+  --astinuslab-panel: var(--ink-100);
+  --astinuslab-fg: var(--ink-900);
+  --astinuslab-fg-muted: var(--ink-800);
+  --astinuslab-fg-subtle: var(--ink-700);
+  --astinuslab-border: var(--ink-300);
+  --astinuslab-border-strong: var(--ink-300);
+  --astinuslab-accent: var(--signal-500);
+  --astinuslab-blue: var(--cobalt-500);
+
+  --bg-0: var(--ink-000);
+  --bg-1: var(--ink-050);
+  --fg-1: var(--ink-900);
+  --fg-2: var(--ink-800);
+  --fg-3: var(--ink-700);
+  --fg-4: var(--ink-600);
+  --fg-5: var(--ink-500);
+  --border-1: var(--ink-300);
+
+  --md-default-bg-color: var(--bg-0);
+  --md-default-fg-color: var(--fg-2);
+  --md-default-fg-color--light: var(--fg-3);
+  --md-primary-fg-color: var(--bg-0);
+  --md-primary-bg-color: var(--fg-1);
+  --md-accent-fg-color: var(--signal-500);
+  --md-code-bg-color: var(--ink-100);
+}
+
+html,
+body,
+.md-typeset,
+.md-search__input,
+.astinuslab-nav__link,
+.md-nav__link {
+  font-family: var(--font-mono) !important;
+}
+
+.astinuslab-topbar {
+  background-color: var(--bg-0) !important;
+  border-bottom-color: var(--border-1) !important;
+}
+
+.astinuslab-brand,
+.astinuslab-brand__name {
+  color: var(--fg-1) !important;
+}
+
+.astinuslab-nav {
+  align-items: center !important;
+  background-color: transparent !important;
+  display: flex;
+  flex: 1 1 auto !important;
+  height: var(--astinuslab-header-height) !important;
+  min-width: 0 !important;
+  position: static !important;
+}
+
+.astinuslab-nav__list {
+  align-items: center !important;
+  display: flex !important;
+  gap: 2px !important;
+  height: 100% !important;
+  list-style: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.astinuslab-nav__item {
+  display: flex !important;
+  margin: 0 !important;
+}
+
+.astinuslab-nav__link {
+  align-items: center !important;
+  border-radius: var(--astinuslab-radius) !important;
+  color: var(--fg-3) !important;
+  display: inline-flex !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  height: 34px !important;
+  letter-spacing: 0 !important;
+  padding: 0 12px !important;
+  text-decoration: none !important;
+  transition: background-color 160ms ease, color 160ms ease !important;
+}
+
+.astinuslab-nav__link--active,
+.astinuslab-nav__link:hover {
+  color: var(--fg-1) !important;
+}
+
+.astinuslab-nav__link:hover {
+  background-color: var(--astinuslab-panel) !important;
+}
+
+.astinuslab-actions > .md-search {
+  display: none;
+}
+
+#__search:checked ~ .md-header .astinuslab-actions > .md-search {
+  display: block;
+  inset: var(--astinuslab-header-height) 16px auto auto;
+  max-width: calc(100vw - 32px);
+  position: fixed;
+  width: 640px;
+  z-index: 120;
+}
+
+#__search:checked ~ .md-header .astinuslab-actions > .md-search .md-search__inner {
+  width: 100%;
+}
+
+.astinuslab-search-trigger,
+.astinuslab-theme-toggle__button {
+  background-color: var(--bg-1) !important;
+  border-color: var(--border-1) !important;
+  color: var(--fg-3) !important;
+}
+
+.astinuslab-search-trigger:hover,
+.astinuslab-theme-toggle__button:hover {
+  background-color: var(--astinuslab-panel) !important;
+  color: var(--fg-1) !important;
+}
+
+.astinuslab-kbd {
+  border-color: var(--border-1) !important;
+  color: var(--fg-3) !important;
+}
+
+/* Material's palette markup (a <form>) is included but replaced by the custom
+   theme toggle below, so keep it screen-reader-only. */
+form.md-header__option {
+  clip: rect(0 0 0 0) !important;
+  clip-path: inset(50%) !important;
+  height: 1px !important;
+  margin: 0 !important;
+  overflow: hidden !important;
+  position: absolute !important;
+  white-space: nowrap !important;
+  width: 1px !important;
+}
+
+/* The i18n language selector shares .md-header__option (a <div>); keep it
+   visible and reveal its trigger button, hidden by default at line ~241. */
+div.md-header__option .md-header__button {
+  display: inline-flex !important;
+}
+
+/* On wide screens (where the left nav sidebar is shown), lift the language
+   selector out of the header and pin it to the bottom of that sidebar as a
+   drill-up menu styled like the nav rows. Below this width the sidebar
+   collapses, so it stays in the header via the rule above. */
+@media screen and (min-width: 76.25em) {
+  div.md-header__option {
+    background: var(--bg-0) !important;
+    border-top: 1px solid var(--border-1) !important;
+    bottom: 0 !important;
+    height: auto !important;
+    left: 0 !important;
+    padding: 8px 12px !important;
+    position: fixed !important;
+    width: var(--astinuslab-sidebar-width) !important;
+    z-index: 20 !important;
+  }
+
+  div.md-header__option .md-select {
+    width: 100% !important;
+  }
+
+  /* trigger reads like a nav row: mono text, muted colour, no box, no icon */
+  div.md-header__option .md-header__button {
+    background: transparent !important;
+    border: 0 !important;
+    border-radius: 6px !important;
+    color: var(--fg-3) !important;
+    display: flex !important;
+    font-family: var(--font-mono) !important;
+    font-size: 13px !important;
+    gap: 8px !important;
+    height: 30px !important;
+    justify-content: flex-start !important;
+    padding: 5px 8px !important;
+    width: 100% !important;
+  }
+
+  div.md-header__option .md-header__button:hover {
+    background: var(--bg-1) !important;
+    color: var(--fg-1) !important;
+  }
+
+  /* drop the translate icon; show the current language name instead */
+  div.md-header__option .md-header__button svg {
+    display: none !important;
+  }
+
+  div.md-header__option .md-header__button::before {
+    content: "English";
+  }
+  html:lang(es) div.md-header__option .md-header__button::before {
+    content: "Español";
+  }
+  html:lang(fr) div.md-header__option .md-header__button::before {
+    content: "Français";
+  }
+  html:lang(ca) div.md-header__option .md-header__button::before {
+    content: "Català";
+  }
+
+  /* drill-up affordance (upward triangle) */
+  div.md-header__option .md-header__button::after {
+    border-bottom: 5px solid currentColor;
+    border-left: 4px solid transparent;
+    border-right: 4px solid transparent;
+    content: "";
+    margin-left: auto;
+    opacity: 0.6;
+  }
+
+  /* open the language list upward, styled to match the theme */
+  div.md-header__option .md-select__inner {
+    background: var(--bg-0) !important;
+    border: 1px solid var(--border-1) !important;
+    border-radius: var(--astinuslab-radius) !important;
+    bottom: calc(100% - 0.2rem) !important;
+    margin-bottom: 0.2rem !important;
+    margin-top: 0 !important;
+    top: auto !important;
+    transform: translate3d(-50%, -0.3rem, 0) !important;
+  }
+
+  div.md-header__option .md-select:hover .md-select__inner,
+  div.md-header__option .md-select:focus-within .md-select__inner {
+    transform: translate3d(-50%, 0, 0) !important;
+  }
+
+  div.md-header__option .md-select__link {
+    color: var(--fg-3) !important;
+    font-family: var(--font-mono) !important;
+    font-size: 13px !important;
+  }
+
+  div.md-header__option .md-select__link:hover {
+    color: var(--fg-1) !important;
+  }
+
+  /* keep the last nav items clear of the pinned selector */
+  .md-sidebar--primary .md-sidebar__scrollwrap {
+    padding-bottom: 52px !important;
+  }
+}
+
+.astinuslab-theme-toggle {
+  align-items: center !important;
+  display: flex !important;
+  height: 34px !important;
+}
+
+.astinuslab-theme-toggle__button {
+  align-items: center !important;
+  border: 1px solid var(--border-1) !important;
+  border-radius: var(--astinuslab-radius) !important;
+  cursor: pointer !important;
+  display: none !important;
+  height: 34px !important;
+  justify-content: center !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  transition: border-color 160ms ease, color 160ms ease, background-color 160ms ease !important;
+  width: 34px !important;
+}
+
+.astinuslab-theme-toggle__button svg {
+  height: 18px !important;
+  width: 18px !important;
+}
+
+body[data-md-color-scheme="default"] .astinuslab-theme-toggle__button--dark,
+body:not([data-md-color-scheme]) .astinuslab-theme-toggle__button--dark,
+body[data-md-color-scheme="slate"] .astinuslab-theme-toggle__button--light {
+  display: inline-flex !important;
+}
+
+.md-content {
+  background: var(--bg-0) !important;
+  padding: 34px 32px 72px !important;
+}
+
+.md-content__inner {
+  margin: 0 auto !important;
+  max-width: var(--astinuslab-content-width) !important;
+}
+
+.md-sidebar--primary {
+  background: var(--bg-1) !important;
+  border-right-color: var(--border-1) !important;
+}
+
+.md-sidebar--secondary {
+  background: var(--bg-0) !important;
+  border-left-color: var(--border-1) !important;
+}
+
+.md-typeset {
+  color: var(--fg-2) !important;
+  font-size: 14px !important;
+  line-height: 1.75 !important;
+}
+
+.md-typeset h1 {
+  color: var(--fg-1) !important;
+  font-family: var(--font-display) !important;
+  font-size: 56px !important;
+  font-weight: 400 !important;
+  letter-spacing: 0 !important;
+  line-height: 1.05 !important;
+  margin: 0 0 22px !important;
+}
+
+.md-typeset h2 {
+  border-top-color: var(--border-1) !important;
+  color: var(--fg-1) !important;
+  font-family: var(--font-mono) !important;
+  font-size: 20px !important;
+  font-weight: 500 !important;
+  letter-spacing: 0 !important;
+  margin: 34px 0 10px !important;
+  padding-top: 18px !important;
+}
+
+.md-typeset h3 {
+  color: var(--fg-1) !important;
+  font-family: var(--font-mono) !important;
+}
+
+.md-typeset :is(h2, h3, h4, h5, h6)[id]:target {
+  scroll-margin-top: calc(var(--astinuslab-header-height) - 2px);
+}
+
+.md-nav__link {
+  color: var(--fg-3) !important;
+}
+
+.md-nav__link:is(:focus, :hover),
+.md-nav__link--active {
+  color: var(--fg-1) !important;
+}
+
+.md-nav__item--section > .md-nav__link,
+.md-nav__item--nested > .md-nav__link {
+  color: var(--fg-5) !important;
+  letter-spacing: 0.12em !important;
+}
+
+/* Search result titles are real <h1>-<h6> inside .md-typeset, so the display
+   heading styles above (56px serif, borders, big margins) leak into the search
+   dropdown and overflow it. Re-constrain them to compact result typography. */
+.md-search-result .md-typeset h1,
+.md-search-result .md-typeset h2,
+.md-search-result .md-typeset h3,
+.md-search-result .md-typeset h4,
+.md-search-result .md-typeset h5,
+.md-search-result .md-typeset h6 {
+  border-top: 0 !important;
+  font-family: var(--font-mono) !important;
+  font-weight: 500 !important;
+  line-height: 1.4 !important;
+  margin: 0 !important;
+  padding-top: 0 !important;
+}
+
+.md-search-result .md-typeset h1 {
+  font-size: 14px !important;
+}
+
+.md-search-result .md-typeset h2,
+.md-search-result .md-typeset h3,
+.md-search-result .md-typeset h4,
+.md-search-result .md-typeset h5,
+.md-search-result .md-typeset h6 {
+  font-size: 13px !important;
+}
+
+/* The result icon is sized in rem, so at this theme's 20px root it renders 24px
+   tall inside the compact (~20px) result line and overflows the article's
+   overflow:hidden box, clipping the icon to a sliver. Constrain it to the line
+   height and centre it in the left gutter. */
+.md-search-result__icon {
+  height: 16px !important;
+  margin: 2px 12px !important;
+  width: 16px !important;
+}
+
+.md-search-result__article {
+  padding-left: 40px !important;
+}
+
+@media screen and (max-width: 44.9375em) {
+  .md-typeset h1 {
+    font-size: 40px !important;
+  }
+
+  #__search:checked ~ .md-header .astinuslab-actions > .md-search {
+    inset: var(--astinuslab-header-height) 10px auto 10px;
+    max-width: none;
+    width: auto;
+  }
+}

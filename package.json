@@ -1,0 +1,22 @@
+{
+  "private": true,
+  "scripts": {
+    "lint:js": "eslint src/astinuslab/web/static tests/browser",
+    "format": "prettier --write \"src/astinuslab/web/static/**/*.{js,css}\" \"tests/browser/**/*.{js,mjs}\"",
+    "format:check": "prettier --check \"src/astinuslab/web/static/**/*.{js,css}\" \"tests/browser/**/*.{js,mjs}\"",
+    "test:js:unit": "node --test \"tests/browser/unit/**/*.test.mjs\" tests/browser/helpers/preconditions.test.js",
+    "test:ui": "playwright test",
+    "test:ui:headed": "playwright test --headed",
+    "test:docs": "playwright test --config=playwright.docs.config.js",
+    "test:smoke": "playwright test --project=smoke",
+    "test:integration": "playwright test --config=playwright.integration.config.js --project=integration",
+    "test:remediation": "playwright test --config=tests/browser/remediation.config.js --project=remediation",
+    "test:e2e:full": "ASTINUSLAB_E2E_FULL=1 playwright test --project=full --workers=1"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@playwright/test": "^1.60.0",
+    "eslint": "^10.4.0",
+    "prettier": "^3.8.3"
+  }
+}

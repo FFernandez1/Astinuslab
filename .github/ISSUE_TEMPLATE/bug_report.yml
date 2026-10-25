@@ -1,0 +1,84 @@
+name: Bug report
+description: Something in AstinusLab does not work as documented.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **Do not report security vulnerabilities here.** Follow the private route in `docs/community/SECURITY.md`.
+
+        Never attach memory captures, disk images, credentials, admin tokens, SSH keys or personal data. Use synthetic examples and redact logs.
+  - type: input
+    id: version
+    attributes:
+      label: AstinusLab version or commit
+      placeholder: "1.0.0 or a commit SHA"
+    validations:
+      required: true
+  - type: dropdown
+    id: run_mode
+    attributes:
+      label: Run mode
+      options:
+        - Development checkout
+        - Release install (systemd)
+    validations:
+      required: true
+  - type: input
+    id: host
+    attributes:
+      label: Host operating system and Python version
+      placeholder: "Ubuntu 24.04 LTS x86_64, Python 3.12"
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Playground
+        - Jobs
+        - Workloads
+        - Attacker VMs
+        - Memory or disk capture
+        - Volatility 3 analysis
+        - Installer, upgrade or uninstall
+        - Web UI
+        - Documentation
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: what_happened
+    attributes:
+      label: What happened
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1.
+        2.
+        3.
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant log lines (redacted)
+      render: text
+  - type: checkboxes
+    id: redaction
+    attributes:
+      label: Data check
+      options:
+        - label: I removed credentials, tokens, keys, evidence files and personal data from this report.
+          required: true

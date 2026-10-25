@@ -1,0 +1,11 @@
+[Unit]
+Description=Clear stale AstinusLab Lab 1 readiness observations
+Before=astinuslab-training-readiness.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/rm -f /var/lib/astinuslab/observations/readiness.json
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
