@@ -43,7 +43,7 @@ jobs:
       ASTINUSLAB_VOL3_DWARF2JSON_PATH: ${{ vars.HOST_RUNNER_VOL3_DWARF2JSON_PATH }}
       ASTINUSLAB_VOL3_DWARF2JSON_SHA256: ${{ vars.HOST_RUNNER_VOL3_DWARF2JSON_SHA256 }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       # Runs before anything imports the backend settings: an unset pin would
       # otherwise reach Settings as an empty string and fail validation with a
@@ -96,7 +96,7 @@ jobs:
           echo "Operator-supplied Volatility configuration is present."
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: "3.12"
       - name: Install dependencies

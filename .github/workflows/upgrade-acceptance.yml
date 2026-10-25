@@ -85,7 +85,7 @@ jobs:
           echo "Marker present; treating $(hostname) as disposable."
 
       - name: Check out the candidate with full history
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           # The prior ref has to be resolvable locally to build its archive.
           fetch-depth: 0
@@ -176,7 +176,7 @@ jobs:
 
       - name: Upload the acceptance report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: upgrade-acceptance-${{ steps.commits.outputs.candidate }}
           path: ${{ runner.temp }}/acceptance
