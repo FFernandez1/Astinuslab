@@ -2,9 +2,9 @@
   "schema": "astinuslab-legal-inventory/v1",
   "source_base": "bd92eb01278714b6472b49a95e9fed2e4d7cbbaa",
   "lockfiles": {
-    "uv.lock": "56a4b391c37f151771cadbdeb330a8a3889c3ccf805113065e3e786c13354025",
+    "uv.lock": "00f6f8db19ae8892286a68391002563064975548ef7a25c7315345816ce39a2f",
     "requirements.lock": "9deefb4e268d556c22a39e95811f992fce3816e10d6ee2c9e5ef792028676f3b",
-    "requirements-dev.lock": "e73b42e7535454908a1c98116144ec8483b763e58b093a96bb508c72f16a5576",
+    "requirements-dev.lock": "d7d1617036e7a0a710b502926ae42889800ea2c1ad3edefa65a9b4d83d9bda2f",
     "package-lock.json": "76ad4c234f6ed42d99ead596535c03895e6408f503677e03ecee0d44370f53dd",
     "pyproject.toml": "93e4d905ecaf3051a3408222170dc69d956508e336810597188a143675e2b5da"
   },
@@ -2062,7 +2062,7 @@
     {
       "ecosystem": "python",
       "name": "certifi",
-      "version": "2026.5.20",
+      "version": "2026.10.23",
       "distribution": "External dependency; downloaded during installation/tooling, not vendored in source archive",
       "scopes": {
         "development": {
@@ -2071,7 +2071,7 @@
             "3.13"
           ],
           "requirements": [
-            "certifi==2026.5.20"
+            "certifi==2026.10.23"
           ]
         },
         "documentation": {
@@ -2080,18 +2080,18 @@
             "3.13"
           ],
           "requirements": [
-            "certifi==2026.5.20"
+            "certifi==2026.10.23"
           ]
         }
       },
-      "source": "https://pypi.org/pypi/certifi/2026.5.20/json",
-      "artifact_url": "https://files.pythonhosted.org/packages/59/8c/57e832b7af6d7c5abe66eb3fbe3a3a32f4d11ea23a1aa7131371035be991/certifi-2026.5.20-py3-none-any.whl",
-      "artifact_sha256": "3c52e209ba0a4ad7aebe60436a4ab349c39e1e602e8c134221e546902ad25897",
+      "source": "https://pypi.org/pypi/certifi/2026.10.23/json",
+      "artifact_url": "https://files.pythonhosted.org/packages/32/d1/a3652fe2c19134d0d15922177821d863cbd7e842d53a21bbe7e8e3a1b5ac/certifi-2026.10.23-py3-none-any.whl",
+      "artifact_sha256": "e9b54de76e530bb6cf0ccd036787103acb58fd42ba930ea8bf948ddbaa2f61d1",
       "lock_digest_verified": true,
       "license_metadata": "MPL-2.0",
       "license_texts": [
         {
-          "archive_member": "certifi-2026.5.20.dist-info/licenses/LICENSE",
+          "archive_member": "certifi-2026.10.23.dist-info/licenses/LICENSE",
           "sha256": "e93716da6b9c0d5a4a1df60fe695b370f0695603d21f6f83f053e42cfc10caf7",
           "bytes": 989
         }
