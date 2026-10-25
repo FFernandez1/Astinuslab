@@ -8,7 +8,7 @@ const { URL } = require("node:url");
 const root = path.resolve(__dirname, "../../..");
 const fixtures = JSON.parse(
   execFileSync(
-    path.join(root, ".venv/bin/python"),
+    process.env.ASTINUSLAB_PYTHON || path.join(root, ".venv/bin/python"),
     [
       "-c",
       `

@@ -3,6 +3,7 @@
 import json
 import os
 import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -56,6 +57,7 @@ elif tool == "sudo" and os.environ.get("BAKE_FAIL") == "flatten": sys.exit(1)
         "ASTINUSLAB_LIBVIRT_IMAGE_BASE_DIR": str(tmp_path / "libvirt"),
         "BAKE_CALLS": str(tmp_path / "calls"),
         "PYTHONPATH": f"{ROOT}/src:{ROOT}",
+        "ASTINUSLAB_PYTHON": sys.executable,
         "BAKE_AUTH": "0",
     }
     env.pop("ASTINUSLAB_TOKEN", None)

@@ -8,7 +8,7 @@ const root = path.resolve(__dirname, "../../..");
 // Render production templates with disposable state; POSTs are always intercepted.
 function render(template, lang = "en") {
   return execFileSync(
-    path.join(root, ".venv/bin/python"),
+    process.env.ASTINUSLAB_PYTHON || path.join(root, ".venv/bin/python"),
     [
       "-c",
       `
